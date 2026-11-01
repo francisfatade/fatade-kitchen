@@ -91,6 +91,7 @@ const Saver = {
       <div class="ss-time">${now.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})}</div>
       <div class="ss-date">${fmtDate(now)} · <i>${DAYS_YO[d]}</i></div>
       <div class="ss-greet">${greeting()}, Ìdílé Fatade</div>
+      ${glucoseSaverHtml()}
       ${dn ? `<div class="ss-meal">Tonight · <i>Oúnjẹ alẹ́</i>: ${dn.em} ${esc(dn.name)}</div>` : ''}
       ${lp ? `<div class="ss-meal">${esc(db.names.me)}'s late plate: ${lp.em} ${esc(lp.name)}</div>` : ''}`;
   },

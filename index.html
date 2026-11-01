@@ -78,7 +78,7 @@ h3{font-size:19px;margin:0 0 6px}
 .shop label{display:flex;gap:14px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line);font-size:19px}
 .shop input{width:28px;height:28px;accent-color:var(--green)}
 .shop label.got span{text-decoration:line-through;color:var(--muted)}
-input[type=text],textarea{font:inherit;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+input[type=text],input[type=email],input[type=password],textarea{font:inherit;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 .form{display:grid;gap:12px;max-width:720px}
 .updatebar{display:none;align-items:center;gap:16px;padding:12px 24px;background:var(--green-soft);font-weight:600;font-size:19px}
 .updatebar.on{display:flex}
@@ -125,6 +125,7 @@ nav small{font-weight:500;font-style:italic;opacity:.75;margin-left:2px}
 <script src="prices.js"></script>
 <script src="recipes.js"></script>
 <script src="family.js"></script>
+<script src="glucose.js"></script>
 <script>
 /* ---------- Meal library ----------
    cats: breakfast | lunchbox | lunch | dinner | late
@@ -340,7 +341,7 @@ function renderToday(){
   const tWk = d===6 ? weekKey(1) : wk, tD = (d+1)%7;
   const prep = [...new Set(slotsFor(tD).map(s=>getPick(tWk,tD,s.id)).map(id=>id&&mealById(id)).filter(m=>m&&m.prep).map(m=>`${m.prep} — for ${m.name}`))];
   const late = getPick(wk,d,'meLate'), lateM = late && late!=='skip' && mealById(late);
-  $('#main').innerHTML = `${heroHtml()}
+  $('#main').innerHTML = `${heroHtml()}${glucoseCardHtml()}
     ${lateM ? `<div class="banner"><span class="big">🌙</span><div><h3>Late plate for ${esc(db.names.me)}</h3>
       ${lateM.em} <b>${esc(lateM.name)}</b> — set it aside before dinner is served.</div></div>` : ''}
     <div class="row"><h2>${DAYS_LONG[d]}'s meals <span class="yo-h">${DAYS_YO[d]} · Oúnjẹ òní</span></h2><span class="spacer"></span>
@@ -709,6 +710,7 @@ function renderSettings(){
       <label>Stores you shop at (separate with commas)<input type="text" id="sStores" value="${esc(db.home.stores.join(', '))}"></label>
       <div><button class="btn" id="sSave">Save</button></div>
     </div>
+    ${glucoseSettingsHtml()}
     ${displaySettingsHtml()}
     <h2 style="margin-top:28px">Send list to phone</h2>
     <div class="card">
@@ -733,6 +735,7 @@ function renderSettings(){
       stores:$('#sStores').value.split(',').map(s=>s.trim()).filter(Boolean)}; save(); view='today'; render(); };
   $('#chkUpd').onclick=async()=>{ $('#updMsg').textContent='Checking…'; $('#updMsg').textContent = await checkForUpdates(); };
   bindDisplaySettings();
+  bindGlucoseSettings();
   $('#testSend').onclick=async()=>{
     try{ const r = await fetch('https://ntfy.sh/', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({topic: ntfyTopic(), title:'Fatade Kitchen', message:'✅ It works! Shopping lists from the tablet will arrive here.', tags:['white_check_mark']})});
@@ -745,6 +748,7 @@ function renderSettings(){
 $('#nav').onclick = e => { const v = e.target.closest('button')?.dataset.v; if(v){ view=v; if(v==='today') weekOffset=0; render(); } };
 render();
 familyInit();
+glucoseInit();
 // Refresh "today" after midnight on an always-on screen
 setInterval(()=>{ if(view==='today') render(); }, 10*60*1000);
 /* ---------- Updates ---------- */
