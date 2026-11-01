@@ -80,6 +80,24 @@ function mealPic(m, cls = ''){
     ? `<img src="${u}" alt="${esc(m.name)}" loading="lazy" decoding="async" onerror="this.parentNode.classList.add('noimg');this.remove()">` : ''}</span>`;
 }
 
+/* Large preview shown while choosing a meal (picker and kids' vote) */
+function bigPreviewHtml(m, {cost = null, tip = false, action = '', actionId = 'pvGo', extra = ''} = {}){
+  if(!m) return `<div class="pv-empty">Tap a meal to see it big 👀</div>`;
+  const u = photoUrl(m, 1000), yo = yoName(m), recipe = recipeOf(m);
+  return `<div class="pv-photo ${u ? '' : 'noimg'}">
+      <span class="pv-em">${m.em}</span>
+      ${u ? `<img src="${u}" alt="${esc(m.name)}" decoding="async" onerror="this.parentNode.classList.add('noimg');this.remove()">` : ''}
+      <div class="pv-cap"><div class="pv-en">${esc(m.name)}</div>${yo ? `<div class="pv-yo">${esc(yo)}</div>` : ''}</div>
+    </div>
+    <div class="pv-info">
+      <div class="food-tags">${m.k ? '<span class="tag t-k">Kids love it</span>' : ''}${m.d ? '<span class="tag t-d">Sugar-friendly</span>' : ''}${m.p ? '<span class="tag t-p">Packs well</span>' : ''}${cost !== null ? `<span class="tag t-c">≈ ${money(cost)}</span>` : ''}
+        ${recipe ? `<a class="rlink" href="${recipe}" target="_blank" rel="noopener">📖 Recipe</a>` : ''}</div>
+      ${tip && m.tip ? `<div class="pv-tip">💚 ${esc(m.tip)}</div>` : ''}
+      ${extra}
+      ${action ? `<button class="btn pv-go" id="${actionId}">${action}</button>` : ''}
+    </div>`;
+}
+
 function photoCreditsHtml(){
   const used = allMeals().filter(m => MEAL_PHOTOS[m.id]);
   if(!used.length) return '';

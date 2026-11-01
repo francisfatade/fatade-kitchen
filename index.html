@@ -455,9 +455,18 @@ function autofill(wk, days){
 function openPicker(wk, day, slotId){
   if(isVoteSlot(slotId)) return openVote(wk, day, slotId);   // kids' meals are chosen by vote (votes.js)
   const slot = SLOTS.find(s=>s.id===slotId), cur = getPick(wk,day,slotId);
-  let showAll = false;
+  let showAll = false, sel = cur && cur !== 'skip' ? cur : null;
+  // Big photo of the meal being looked at; tap a card to preview it, tap again (or the button) to choose
+  const drawPreview = () => {
+    const m = sel && mealById(sel);
+    $('#pv').innerHTML = bigPreviewHtml(m, {cost: m ? mealCost(m, servingsFor(slot)) : null, tip: !!slot.d,
+      action: m ? (m.id === cur ? '✓ Keep this meal' : 'Choose this meal') : ''});
+    $('#sheet').querySelectorAll('.food').forEach(b => b.classList.toggle('mine', b.dataset.m === sel));
+    const go = $('#pvGo'); if(go) go.onclick = () => { setPick(wk,day,slotId,sel); closePicker(); };
+  };
   const draw = () => {
     const list = candidates(slot, showAll);
+    if(!sel && list.length) sel = list[0].id;
     $('#sheet').innerHTML = `<div class="grabber"></div>
       <div class="pick-head"><div>
         <div class="vote-kicker who-${slot.who}">${DAYS_LONG[day]} · <i>${DAYS_YO[day]}</i></div>
@@ -468,8 +477,15 @@ function openPicker(wk, day, slotId){
         <span class="spacer"></span>
         <button class="btn ghost" id="skip">Skip this meal</button>
         ${cur ? `<button class="btn ghost" id="clr">Clear</button>`:''}</div>
-      <div class="vopts many">${list.map(m => foodCardHtml(m, {cls: m.id===cur ? 'mine' : '', cost: mealCost(m, servingsFor(slot)), tip: !!slot.d})).join('')}</div>`;
-    $('#sheet').querySelectorAll('.food').forEach(b=>b.onclick=()=>{ setPick(wk,day,slotId,b.dataset.m); closePicker(); });
+      <div class="pick-layout"><div class="pv" id="pv"></div>
+        <div class="vopts many pick-list">${list.map(m => foodCardHtml(m, {cost: mealCost(m, servingsFor(slot))})).join('')}</div></div>`;
+    $('#sheet').classList.add('tall');
+    $('#sheet').querySelectorAll('.food').forEach(b=>b.onclick=()=>{
+      if(b.dataset.m === sel){ setPick(wk,day,slotId,sel); closePicker(); return; }   // second tap chooses
+      sel = b.dataset.m; drawPreview();
+      if(matchMedia('(orientation: portrait)').matches) $('#sheet').scrollTo({top: 0, behavior: 'smooth'});
+    });
+    drawPreview();
     $('#skip').onclick=()=>{ setPick(wk,day,slotId,'skip'); closePicker(); };
     $('#close').onclick=closePicker;
     if($('#clr')) $('#clr').onclick=async()=>{ if(await parentCheck('Clear this meal')){ setPick(wk,day,slotId,null); } closePicker(); };
@@ -477,7 +493,7 @@ function openPicker(wk, day, slotId){
   };
   draw(); $('#scrim').classList.add('on');
 }
-function closePicker(){ $('#scrim').classList.remove('on'); render(); }
+function closePicker(){ $('#scrim').classList.remove('on'); $('#sheet').classList.remove('tall'); render(); }
 $('#scrim').onclick = e => { if(e.target.id==='scrim' && !Alarm.active) closePicker(); };
 
 /* ---------- Shopping ---------- */
