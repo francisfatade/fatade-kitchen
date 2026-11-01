@@ -68,6 +68,7 @@ const LLU = {
 
   async tick(){
     if(!this.configured() || this.busy || Date.now() < this.pauseUntil) return;
+    if(NATIVE && !NATIVE.http){ this.status = 'Needs the new tablet app — tap Install in the green bar at the top.'; glucoseChanged(); return; }
     this.busy = true;
     try{ await this.fetch(); this.status = ''; }
     catch(e){ this.status = e.message || 'Could not reach LibreLinkUp.'; }

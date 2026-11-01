@@ -136,6 +136,35 @@ function bindDisplaySettings(){
   document.querySelectorAll('[data-orient]').forEach(b => b.onclick = () => { NATIVE.setOrientation(b.dataset.orient); render(); });
 }
 
+/* ---------- Tablet app updates ----------
+   The website updates itself (sw.js). The Android app around it only changes
+   rarely; app/version.json says which app version is newest. App 1.2+ installs
+   updates itself; older apps download the file in the tablet's browser instead. */
+const APP_APK = new URL('app/FatadeKitchen.apk', location.href).href;
+const APP_APK_DIRECT = 'https://raw.githubusercontent.com/francisfatade/fatade-kitchen/main/app/FatadeKitchen.apk';
+const appVersionCode = () => !NATIVE ? 0 : NATIVE.appVersion ? NATIVE.appVersion() : NATIVE.http ? 2 : 1;
+async function checkAppUpdate(){
+  if(!NATIVE) return;
+  try{
+    const info = await fetch('app/version.json?t=' + Date.now(), {cache:'no-store'}).then(r => r.json());
+    if(info.versionCode <= appVersionCode()) return;
+    $('#appBarMsg').textContent = `📲 New tablet app ${info.versionName} — ${info.notes || 'improvements'}`;
+    $('#appBar').classList.add('on');
+    $('#appBarBtn').onclick = () => {
+      if(NATIVE.installUpdate){ $('#appBarBtn').textContent = 'Downloading…'; NATIVE.installUpdate(APP_APK); }
+      else { $('#appBarMsg').textContent = '⬇️ Downloading in the browser — when it finishes, tap the download and choose Install.'; location.href = APP_APK_DIRECT; }
+    };
+  }catch(e){}
+}
+window.__appUpdate = s => {
+  const msg = s === 'downloading' ? 'Downloading the new app…'
+    : s === 'confirm' ? 'Tap Install on the screen to finish.'
+    : s === 'permission' ? 'Turn on “Allow from this source” for Fatade Kitchen, come back, then tap Install again.'
+    : s === 'done' ? 'Updated! Opening the new version…'
+    : 'Could not update: ' + s.replace(/^error:/, '');
+  $('#appBarMsg').textContent = msg; $('#appBarBtn').textContent = 'Install';
+};
+
 /* ---------- Start-up ---------- */
 function familyInit(){
   ['pointerdown','keydown','touchstart'].forEach(ev => addEventListener(ev, Saver.poke, {passive:true, capture:true}));
@@ -144,4 +173,5 @@ function familyInit(){
   window.__back = () => { if(Saver.on) Saver.hide(); else if($('#scrim').classList.contains('on')) closePicker(); else { view='today'; render(); } };
   matchMedia('(orientation: portrait)').addEventListener('change', () => { if(view==='week') render(); });
   Photos.load().then(() => { applyBackdrop(); if(view==='today' || view==='settings') render(); });
+  checkAppUpdate(); setInterval(checkAppUpdate, 30*60*1000);
 }
