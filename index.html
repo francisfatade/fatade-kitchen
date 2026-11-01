@@ -133,6 +133,7 @@ nav small{font-weight:500;font-style:italic;opacity:.75;margin-left:2px}
 <script src="glucose.js"></script>
 <script src="profiles.js"></script>
 <script src="hungry.js"></script>
+<script src="votes.js"></script>
 <script>
 /* ---------- Meal library ----------
    cats: breakfast | lunchbox | lunch | dinner | late
@@ -146,18 +147,18 @@ const BASE_MEALS = [
    ing:['Unripe plantain','Eggs','Tomatoes','Onions','Pepper'], tip:'Unripe (green) plantain only. 1 finger max.'},
   {id:'veg-omelette', name:'Veggie omelette & avocado', em:'🥑', cats:['breakfast','late'], k:0,d:1,p:1,
    ing:['Eggs','Spinach / ugu','Onions','Tatashe','Avocado'], tip:'Very low carb — ideal on a fasting morning.'},
-  {id:'okpa', name:'Okpa (Bambara nut pudding)', em:'🟠', cats:['breakfast','lunch'], k:1,d:1,p:1,
+  {id:'okpa', name:'Bambara nut pudding (okpa)', em:'🟠', cats:['breakfast','lunch'], k:1,d:1,p:1,
    ing:['Okpa flour','Palm oil','Pepper','Salt'], tip:'Half a wrap is enough. Pair with garden egg.'},
   {id:'oats-nuts', name:'Oats with groundnuts (no sugar)', em:'🥣', cats:['breakfast'], k:1,d:1,p:0,
    ing:['Rolled oats','Groundnuts','Milk (unsweetened)','Cinnamon'], tip:'Steel-cut / rolled, not instant. No sugar — cinnamon instead.'},
-  {id:'akara-pap', name:'Akara & pap', em:'🧆', cats:['breakfast'], k:1,d:0,p:0,
+  {id:'akara-pap', name:'Bean fritters (akara) & pap', em:'🧆', cats:['breakfast'], k:1,d:0,p:0,
    ing:['Beans (peeled)','Onions','Pepper','Pap (ogi)','Milk','Vegetable oil'], prep:'Soak & peel beans tonight',
    tip:'Daddy: akara is fine, skip the pap — have garden eggs instead.'},
   {id:'yam-egg', name:'Boiled yam & egg sauce', em:'🍠', cats:['breakfast'], k:1,d:0,p:0,
    ing:['Yam','Eggs','Tomatoes','Onions','Pepper'], tip:'Daddy: swap yam for unripe plantain, or 2 small slices only.'},
   {id:'bread-egg', name:'Bread & fried egg', em:'🍞', cats:['breakfast','lunchbox'], k:1,d:0,p:1,
    ing:['Bread','Eggs','Butter'], tip:'Daddy: wholewheat bread, 1 slice, extra egg.'},
-  {id:'custard', name:'Custard & akara', em:'🍮', cats:['breakfast'], k:1,d:0,p:0,
+  {id:'custard', name:'Custard & bean fritters (akara)', em:'🍮', cats:['breakfast'], k:1,d:0,p:0,
    ing:['Custard powder','Milk','Sugar','Beans (peeled)','Onions'], prep:'Soak & peel beans tonight'},
   {id:'indomie-egg', name:'Noodles & egg', em:'🍜', cats:['breakfast','lunchbox'], k:1,d:0,p:1,
    ing:['Noodles','Eggs','Carrots','Green beans']},
@@ -208,21 +209,21 @@ const BASE_MEALS = [
    ing:['Gizzards','Garden eggs','Tatashe','Onions']},
 
   // Family dinner
-  {id:'efo-swallow', name:'Efo riro & swallow', em:'🥬', cats:['dinner'], k:1,d:1,p:0,
+  {id:'efo-swallow', name:'Spinach stew (efo riro) & swallow', em:'🥬', cats:['dinner'], k:1,d:1,p:0,
    ing:['Spinach (efo)','Assorted meat','Stockfish','Tatashe','Locust beans (iru)','Palm oil','Swallow of choice'],
    tip:'Daddy: oat / plantain-flour swallow, fist-size — or skip swallow and double the soup.'},
-  {id:'egusi-swallow', name:'Egusi soup & swallow', em:'🍲', cats:['dinner'], k:1,d:1,p:0,
+  {id:'egusi-swallow', name:'Melon seed soup (egusi) & swallow', em:'🍲', cats:['dinner'], k:1,d:1,p:0,
    ing:['Egusi','Ugu / bitterleaf','Assorted meat','Stockfish','Crayfish','Palm oil','Swallow of choice'],
    tip:'Daddy: oat / wheat swallow, small wrap. Avoid eba & pounded yam.'},
   {id:'okra-swallow', name:'Okra soup & swallow', em:'🫛', cats:['dinner'], k:1,d:1,p:0,
    ing:['Okra','Fish','Assorted meat','Crayfish','Ugu','Palm oil','Swallow of choice'],
    tip:'Okra is excellent for blood sugar. Small oat swallow.'},
-  {id:'ogbono', name:'Ogbono soup & swallow', em:'🥘', cats:['dinner'], k:1,d:1,p:0,
+  {id:'ogbono', name:'Draw soup (ogbono) & swallow', em:'🥘', cats:['dinner'], k:1,d:1,p:0,
    ing:['Ogbono','Assorted meat','Stockfish','Ugu','Palm oil','Swallow of choice'], tip:'Same swallow rule: oat/wheat, small.'},
-  {id:'edikaikong', name:'Edikaikong & swallow', em:'🌿', cats:['dinner'], k:0,d:1,p:0,
+  {id:'edikaikong', name:'Vegetable soup (edikaikong) & swallow', em:'🌿', cats:['dinner'], k:0,d:1,p:0,
    ing:['Ugu','Waterleaf','Periwinkle','Assorted meat','Stockfish','Palm oil','Swallow of choice'],
    tip:'Vegetable-heavy — one of the best soups for Daddy.'},
-  {id:'banga', name:'Banga soup & starch', em:'🌴', cats:['dinner'], k:1,d:0,p:0,
+  {id:'banga', name:'Palm nut soup (banga) & starch', em:'🌴', cats:['dinner'], k:1,d:0,p:0,
    ing:['Palm fruit concentrate','Fish','Beletete spice','Starch / swallow'], tip:'Daddy: soup & fish only, skip the starch.'},
   {id:'stew-rice', name:'White rice & stew', em:'🍛', cats:['dinner','lunchbox'], k:1,d:0,p:1,
    ing:['Rice','Tomatoes','Tatashe','Chicken / beef','Onions'], tip:'Daddy: cauliflower rice or 4 spoons rice + extra stew meat.'},
@@ -340,6 +341,7 @@ function slotCard(wk, day, slot){
     <span class="who who-${slot.who}">${esc(slot.label(db.names, we))} <span class="yo-w">· ${slot.yo}</span></span>
     <span class="meal">${m?`<span class="em">${m.em}</span><span>${esc(m.name)}${yoName(m)?`<span class="yo">${esc(yoName(m))}</span>`:''}</span>`: pick==='skip' ? 'Skipping' : '＋ Tap to choose'}</span>
     ${meta}${warn}${tip}
+    ${isVoteSlot(slot.id) ? `<span class="vstat ${voteStatus(wk,day,slot.id).cls}">${esc(voteStatus(wk,day,slot.id).txt)}</span>` : ''}
   </button>`;
 }
 
@@ -354,6 +356,7 @@ function renderToday(){
   $('#main').innerHTML = `${heroHtml()}${glucoseCardHtml()}${hungryButtonHtml()}
     ${lateM ? `<div class="banner"><span class="big">🌙</span><div><h3>Late plate for ${esc(db.names.me)}</h3>
       ${lateM.em} <b>${esc(lateM.name)}</b> — set it aside before dinner is served.</div></div>` : ''}
+    ${voteTodayHtml()}
     <div class="row"><h2>${DAYS_LONG[d]}'s meals <span class="yo-h">${DAYS_YO[d]} · Oúnjẹ òní</span></h2><span class="spacer"></span>
       ${empty ? `<button class="btn" id="fillToday">✨ Suggest ${empty} meal${empty>1?'s':''}</button>` : ''}</div>
     <div class="grid">${slots.map(s=>slotCard(wk,d,s)).join('')}</div>
@@ -367,6 +370,7 @@ function renderToday(){
   const f = $('#fillToday'); if(f) f.onclick = ()=>{ autofill(wk,[d]); render(); };
   const h = $('#heroAdd'); if(h) h.onclick = ()=>{ view='settings'; render(); };
   $('#hungryBtn').onclick = () => hungryNow('button');
+  bindVoteToday();
 }
 
 function renderWeek(){
@@ -385,7 +389,7 @@ function renderWeek(){
       <div class="row"><h3>${DAYS_LONG[i]} ${dates[i].getDate()}</h3><span class="yo-h">${DAYS_YO[i]}</span></div>
       <div class="dslots">${slotsFor(i).map(s=>{ const p=getPick(wk,i,s.id), m=p && p!=='skip' && mealById(p);
         return `<button class="dcell cell ${p==='skip'?'skip':''}" data-day="${i}" data-slot="${s.id}">
-          <span class="lab who-${s.who}">${esc(s.label(db.names,i>=5))}</span>
+          <span class="lab who-${s.who}">${esc(s.label(db.names,i>=5))}${isVoteSlot(s.id) ? (peekVote(wk,i,s.id)?.lock ? ' 🔒' : ' 🗳️') : ''}</span>
           ${m ? `<span>${m.em} ${esc(m.name)}</span>` : p==='skip' ? 'skip' : '<span class="muted">＋ choose</span>'}</button>`; }).join('')}</div></div>`).join('')}`;
   } else {
   html += `<div class="week"><div></div>${DAYS.map((d,i)=>`<div class="hd ${i===ti?'today':''}">${d} ${dates[i].getDate()}<br><small>${DAYS_YO[i]}</small></div>`).join('')}`;
@@ -395,7 +399,7 @@ function renderWeek(){
       if(i>=5 && s.weekdayOnly){ html += `<div class="cell na"></div>`; continue; }
       const p = getPick(wk,i,s.id), m = p && p!=='skip' && mealById(p);
       html += `<button class="cell ${p==='skip'?'skip':''}" data-day="${i}" data-slot="${s.id}">
-        ${m ? `<span class="em">${m.em}</span>${esc(m.name)}` : p==='skip' ? 'skip' : '<span class="muted">＋</span>'}</button>`;
+        ${m ? `<span class="em">${m.em}</span>${esc(m.name)}` : p==='skip' ? 'skip' : '<span class="muted">＋</span>'}${isVoteSlot(s.id) && peekVote(wk,i,s.id)?.lock ? ' 🔒' : ''}</button>`;
     }
   }
   }
@@ -404,7 +408,10 @@ function renderWeek(){
   $('#prevW').onclick=()=>{weekOffset--; render();};
   $('#nextW').onclick=()=>{weekOffset++; render();};
   $('#fillWeek').onclick=()=>{ autofill(wk,[0,1,2,3,4,5,6]); render(); };
-  $('#clearWeek').onclick=()=>{ if(confirm('Clear every meal this week?')){ delete db.plans[wk]; save(); render(); } };
+  $('#clearWeek').onclick=async()=>{
+    const locked = Object.values(db.votes?.[wk] || {}).some(d => Object.values(d).some(s => s.lock));
+    if(locked ? await parentCheck('Clear the whole week') : confirm('Clear every meal this week?')){ delete db.plans[wk]; if(db.votes) delete db.votes[wk]; save(); }
+    closePicker(); };
 }
 
 function autofill(wk, days){
@@ -430,24 +437,23 @@ function autofill(wk, days){
 }
 
 function openPicker(wk, day, slotId){
+  if(isVoteSlot(slotId)) return openVote(wk, day, slotId);   // kids' meals are chosen by vote (votes.js)
   const slot = SLOTS.find(s=>s.id===slotId), cur = getPick(wk,day,slotId);
   let showAll = false;
   const draw = () => {
     const list = candidates(slot, showAll);
-    $('#sheet').innerHTML = `
-      <div class="row"><div><div class="who who-${slot.who}" style="font-weight:700">${DAYS_LONG[day]} · ${DAYS_YO[day]}</div>
-        <h2 style="margin:2px 0">${esc(slot.label(db.names, day>=5))}</h2></div>
+    $('#sheet').innerHTML = `<div class="grabber"></div>
+      <div class="pick-head"><div>
+        <div class="vote-kicker who-${slot.who}">${DAYS_LONG[day]} · <i>${DAYS_YO[day]}</i></div>
+        <h2>${esc(slot.label(db.names, day>=5))}</h2><div class="vote-yo">${slot.yo}</div></div>
+        <button class="iconbtn lg" id="close" aria-label="Close">✕</button></div>
+      <div class="pick-tools">
+        ${slot.d ? `<button class="chip ${showAll?'':'on'}" id="dOnly">💚 Sugar-friendly only</button>` : ''}
         <span class="spacer"></span>
-        ${slot.d ? `<button class="chip ${showAll?'':'on'}" id="dOnly">💚 Blood-sugar friendly only</button>` : ''}
-        <button class="btn ghost" id="skip">Skip</button>
-        ${cur ? `<button class="btn ghost" id="clr">Clear</button>`:''}
-        <button class="btn ghost" id="close">✕</button></div>
-      <div class="choices">${list.map(m=>`<button class="choice ${m.id===cur?'cur':''}" data-id="${m.id}">
-        <span class="em">${m.em}</span><span><b>${esc(m.name)}</b>${yoName(m)?`<span class="yo">${esc(yoName(m))}</span>`:''}
-        <small>${m.d?'<span class="pill p-d">💚 sugar-friendly</span>':''}${m.k?'<span class="pill p-k">kids</span>':''}${m.p?'<span class="pill p-p">packs</span>':''}</small>
-        <small>≈ ${money(mealCost(m, servingsFor(slot)))} for ${servingsFor(slot)}</small>
-        ${slot.d && m.tip ? `<small>${esc(m.tip)}</small>`:''}</span></button>`).join('')}</div>`;
-    $('#sheet').querySelectorAll('.choice').forEach(b=>b.onclick=()=>{ setPick(wk,day,slotId,b.dataset.id); closePicker(); });
+        <button class="btn ghost" id="skip">Skip this meal</button>
+        ${cur ? `<button class="btn ghost" id="clr">Clear</button>`:''}</div>
+      <div class="vopts many">${list.map(m => foodCardHtml(m, {cls: m.id===cur ? 'mine' : '', cost: mealCost(m, servingsFor(slot)), tip: !!slot.d})).join('')}</div>`;
+    $('#sheet').querySelectorAll('.food').forEach(b=>b.onclick=()=>{ setPick(wk,day,slotId,b.dataset.m); closePicker(); });
     $('#skip').onclick=()=>{ setPick(wk,day,slotId,'skip'); closePicker(); };
     $('#close').onclick=closePicker;
     if($('#clr')) $('#clr').onclick=()=>{ setPick(wk,day,slotId,null); closePicker(); };

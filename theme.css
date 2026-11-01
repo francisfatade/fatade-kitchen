@@ -166,6 +166,75 @@ label input{margin-top:6px;color:var(--ink)}
 .pwrow{display:flex;gap:10px;margin:26px 0 0}
 .pwrow input{flex:1}
 
+/* Food cards: English first (easy for the kids to read), Yoruba underneath */
+.vopts{display:grid;gap:14px;grid-template-columns:1fr}
+.vopts.many{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));max-height:58vh;overflow:auto;padding:4px}
+.food{display:flex;align-items:center;gap:16px;width:100%;text-align:left;border:0;border-radius:22px;padding:14px 16px;
+  background:var(--card);box-shadow:var(--shadow);color:var(--ink);position:relative}
+.food:disabled{opacity:1}
+.food-em{width:72px;height:72px;border-radius:20px;background:var(--fill);display:grid;place-items:center;font-size:42px;flex:none}
+.food-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.food-en{font-size:21px;font-weight:750;letter-spacing:-.02em;line-height:1.2}
+.food-yo{font-size:15px;font-style:italic;color:var(--muted);line-height:1.25}
+.food-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+.tag{font-size:12.5px;font-weight:650;padding:3px 9px;border-radius:999px;background:var(--fill);color:var(--ink)}
+.t-k{background:var(--orange-soft);color:var(--orange)} .t-d{background:rgba(47,180,87,.14);color:#1F8A42} .t-p{background:var(--blue-soft);color:var(--blue)}
+.food-tip{font-size:14px;color:var(--muted);margin-top:4px}
+.food.mine{box-shadow:0 0 0 3px var(--green),var(--shadow)}
+.food.win{box-shadow:0 0 0 3px var(--ok),var(--shadow)}
+.food.approve{box-shadow:0 0 0 2px rgba(var(--accent-rgb),.5),var(--shadow)}
+.vfaces{display:flex;align-items:center;gap:4px;flex:none}
+.vcount{font-size:14px;font-weight:700;color:var(--muted);margin-left:6px;min-width:30px;text-align:right}
+.pav.xs{width:30px;height:30px;font-size:12px;box-shadow:0 0 0 2px var(--card)}
+
+/* Vote sheet */
+.vote-head{text-align:center;margin-bottom:16px}
+.vote-kicker{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--green)}
+.vote-head h2{font-size:30px;margin:6px 0 2px}
+.vote-yo{font-size:16px;font-style:italic;color:var(--muted)}
+.vote-rule{display:inline-block;margin-top:10px;font-size:14px;font-weight:600;background:var(--fill);border-radius:999px;padding:6px 14px}
+.voters{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;margin:6px 0 4px}
+.voter{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;background:transparent;padding:6px;border-radius:20px;min-width:92px}
+.voter .pav{width:64px;height:64px;font-size:24px;transition:transform .15s}
+.voter.on .pav{transform:scale(1.12);box-shadow:0 0 0 4px var(--bg),0 0 0 7px var(--green)}
+.vname{font-weight:700;font-size:15px}
+.vdone{font-size:12px;font-weight:700;color:var(--ok)}
+.vote-hint{text-align:center;font-size:18px;font-weight:650;margin:10px 0 14px;color:var(--green)}
+.vote-locked{text-align:center}
+.vl-badge{display:inline-block;background:var(--ok);color:#fff;font-weight:800;border-radius:999px;padding:6px 16px;margin-bottom:12px}
+.vl-by{margin-top:12px;color:var(--muted);font-weight:600}
+.grownups{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+.gu-label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);width:100%}
+.lock.mini{margin-top:0}
+.lock.mini .lock-ic{width:60px;height:60px}
+
+/* Picker header */
+.pick-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+.pick-head > div{flex:1}
+.pick-head h2{margin:4px 0 2px;font-size:28px}
+.pick-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.iconbtn.lg{width:40px;height:40px;font-size:18px}
+
+/* Today: vote card + slot status */
+.vote-card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;margin-bottom:18px}
+.vc-top{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+.vc-top b{font-size:19px}
+.vc-ic{font-size:30px;width:54px;height:54px;border-radius:16px;background:var(--green-soft);display:grid;place-items:center}
+.vc-btns{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.vc-btn{display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;border:0;border-radius:18px;padding:14px 16px;background:var(--fill);color:var(--ink)}
+.vc-btn.open,.vc-btn.voting{background:var(--green-soft)}
+.vc-what{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.vc-meal{font-size:17px;font-weight:700}
+.vc-st{font-size:14px;font-weight:600;color:var(--green)}
+.vc-btn.locked .vc-st{color:var(--ok)}
+.vstat{align-self:flex-start;font-size:13px;font-weight:700;border-radius:999px;padding:4px 10px;background:var(--green-soft);color:var(--green)}
+.vstat.locked{background:rgba(47,180,87,.14);color:#1F8A42}
+
+/* Celebration */
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:120;overflow:hidden}
+.confetti i{position:absolute;top:-40px;left:var(--x);font-size:30px;font-style:normal;animation:fall var(--d) ease-in forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(var(--r))}}
+
 /* Ebi ń pa mí (hungry.js) */
 .hungry-btn{display:flex;align-items:center;gap:16px;width:100%;margin:0 0 18px;padding:16px 20px;border:0;border-radius:var(--radius);
   text-align:left;color:#fff;background:linear-gradient(120deg,rgba(var(--accent-rgb),1),rgba(var(--accent-rgb),.78));
@@ -182,6 +251,10 @@ label input{margin-top:6px;color:var(--ink)}
 .hg-list .lrow b{display:block;font-size:19px}
 .hg-list .lic{font-size:24px;width:46px;height:46px;border-radius:14px}
 .hg-ok{width:100%;margin-top:18px;padding:16px;font-size:19px}
+.rec-dot{width:14px;height:14px;border-radius:50%;background:var(--red);animation:recblink 1s infinite}
+@keyframes recblink{50%{opacity:.25}}
+.rec-time{font:600 17px var(--font);font-variant-numeric:tabular-nums;min-width:96px}
+#recStart:not(.ghost){background:var(--red)}
 .timein{background:var(--fill);border:0;border-radius:12px;padding:10px 14px;font:600 20px var(--font);color:var(--ink)}
 
 /* Screensaver + toast polish */

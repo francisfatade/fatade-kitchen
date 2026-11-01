@@ -3,7 +3,47 @@
    taps the button or says "ebi n pa mi". Tablet: chime + spoken call + prep card.
    Phone: the same message through ntfy (Settings → Send list to phone). */
 
-const hungryCfg = () => db.home.hungry ||= {on:true, time:'18:00', speak:true, phone:true, last:''};
+const hungryCfg = () => db.home.hungry ||= {on:true, time:'18:00', speak:true, phone:true, last:'', useRec:true};
+
+/* ---------- Daddy's own recorded call (song or voice) ----------
+   Kept only on this tablet (IndexedDB), never uploaded. */
+const CallRec = {
+  dbp: null, url: '', has: false, rec: null, chunks: [], started: 0, timer: null, MAX: 60,
+  open(){ return this.dbp ||= new Promise((res, rej) => { const r = indexedDB.open('fatade-sounds', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('sounds'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+  async tx(mode, fn){ const d = await this.open(); return new Promise((res, rej) => { const t = d.transaction('sounds', mode), q = fn(t.objectStore('sounds'));
+    t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error); }); },
+  async load(){
+    try{ const b = await this.tx('readonly', s => s.get('dinnerCall')); if(this.url) URL.revokeObjectURL(this.url);
+      this.has = !!b; this.url = b ? URL.createObjectURL(b) : ''; }catch(e){ this.has = false; }
+  },
+  async start(){
+    try{
+      const stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false, noiseSuppression:false}});
+      const type = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm'].find(t => window.MediaRecorder?.isTypeSupported?.(t)) || '';
+      this.rec = new MediaRecorder(stream, type ? {mimeType:type} : undefined); this.chunks = [];
+      this.rec.ondataavailable = e => e.data.size && this.chunks.push(e.data);
+      this.rec.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop()); clearInterval(this.timer);
+        const blob = new Blob(this.chunks, {type: this.rec.mimeType || 'audio/webm'}); this.rec = null;
+        if(blob.size > 1000){ await this.tx('readwrite', s => s.put(blob, 'dinnerCall')); await this.load(); hungryCfg().useRec = true; save(); toast('🎙️ Your dinner call is saved!'); }
+        else toast('That recording was empty — try again.');
+        if(view === 'settings') render();
+      };
+      this.rec.start(); this.started = Date.now();
+      this.timer = setInterval(() => { const s = Math.floor((Date.now() - this.started) / 1000), el = $('#recTime');
+        if(el) el.textContent = `0:${String(s).padStart(2, '0')} / 1:00`; if(s >= this.MAX) this.stop(); }, 250);
+      if(view === 'settings') render();
+    }catch(e){
+      // Tablet apps before 1.3 (versionCode 4) can't hand the microphone to the page
+      toast(NATIVE && appVersionCode() < 4 ? 'Recording needs the new tablet app — tap Install in the green bar.'
+        : 'Microphone not available — allow it and try again.');
+    }
+  },
+  stop(){ if(this.rec && this.rec.state !== 'inactive') this.rec.stop(); },
+  play(){ return new Promise(res => { if(!this.url) return res(); const a = new Audio(this.url); a.onended = a.onerror = () => res(); a.play().catch(() => res()); }); },
+  async remove(){ await this.tx('readwrite', s => s.delete('dinnerCall')); await this.load(); },
+};
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; };
 
 function hungryPlan(){
@@ -54,10 +94,10 @@ async function hungryNow(source){
   $('#hgOk').onclick = () => { if(NATIVE) NATIVE.stopVoice(); else window.speechSynthesis?.cancel(); closePicker(); };
 
   if(c.speak){
-    chime();
-    const said = `Ebi ń pa mí o! Ìyàwó, ${me} ń bọ̀ wálé. ` +
-      (dinner ? `Tonight's dinner is ${dinner.name}. ` : '') + (late ? `His late plate is ${late.name}.` : '');
-    setTimeout(() => { if(typeof voice !== 'undefined' && !voice.active) voice.speak(said); }, 1400);
+    const menu = (dinner ? `Tonight's dinner is ${dinner.name}. ` : '') + (late ? `His late plate is ${late.name}.` : '');
+    const say = t => { if(t && typeof voice !== 'undefined' && !voice.active) voice.speak(t); };
+    if(c.useRec && CallRec.has){ CallRec.play().then(() => say(menu)); }      // Daddy's own song/voice first
+    else { chime(); setTimeout(() => say(`Ebi ń pa mí o! Ìyàwó, ${me} ń bọ̀ wálé. ` + menu), 1400); }
   }
   if(c.phone && db.home.ntfy){
     const lines = [`${me} ń bọ̀ wálé — time to prep. 🍲`];
@@ -89,6 +129,13 @@ function hungrySettingsHtml(){
     <div class="card list">
       <div class="lrow"><span class="lic">⏰</span><span style="flex:1"><b>Every day at</b><small>Plays once a day so ${esc(db.names.wife)} can prep before ${esc(db.names.me)} gets home.</small></span>
         <input type="time" id="hgTime" value="${c.time}" class="timein"></div>
+      <div class="lrow rec-row"><span class="lic">🎙️</span><span style="flex:1"><b>Your own dinner call</b>
+          <small>${CallRec.rec ? 'Recording… sing or speak now!' : CallRec.has ? 'Your recording plays first, then the tablet reads tonight\'s menu.' : 'Sing a song or say it your way — up to 1 minute. It stays on this tablet.'}</small></span>
+        ${CallRec.rec ? `<span class="rec-dot"></span><span id="recTime" class="rec-time">0:00 / 1:00</span><button class="btn warn" id="recStop">■ Stop</button>`
+          : `${CallRec.has ? `<button class="btn tinted" id="recPlay">▶ Play</button>` : ''}
+             <button class="btn ${CallRec.has ? 'ghost' : ''}" id="recStart">● ${CallRec.has ? 'Record again' : 'Record'}</button>
+             ${CallRec.has ? `<button class="iconbtn" id="recDel" title="Delete recording">✕</button>` : ''}`}</div>
+      ${CallRec.has ? `<div class="lrow"><div class="chips"><button class="chip ${c.useRec?'on':''}" id="hgUseRec">🎵 Use my recording</button></div></div>` : ''}
       <div class="lrow"><div class="chips">
         <button class="chip ${c.on?'on':''}" id="hgOn">${c.on ? 'On' : 'Off'}</button>
         <button class="chip ${c.speak?'on':''}" id="hgSpeak">🔊 Call it out on the tablet</button>
@@ -103,8 +150,15 @@ function bindHungrySettings(){
   $('#hgSpeak').onclick = () => { c.speak = !c.speak; save(); render(); };
   $('#hgPhone').onclick = () => { c.phone = !c.phone; save(); render(); };
   $('#hgTest').onclick = () => hungryNow('test');
+  const on = (id, f) => { const el = $('#' + id); if(el) el.onclick = f; };
+  on('recStart', () => CallRec.start());
+  on('recStop', () => CallRec.stop());
+  on('recPlay', () => CallRec.play());
+  on('recDel', async () => { if(confirm('Delete your recorded dinner call?')){ await CallRec.remove(); render(); } });
+  on('hgUseRec', () => { c.useRec = !c.useRec; save(); render(); });
 }
 function hungryInit(){
-  hungryCfg();
+  const c = hungryCfg(); if(c.useRec === undefined) c.useRec = true;
+  CallRec.load();
   hungryCheck(); setInterval(hungryCheck, 30000);
 }

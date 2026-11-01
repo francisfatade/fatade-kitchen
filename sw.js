@@ -1,9 +1,9 @@
 // Offline cache + update flow.
 // release.ps1 bumps VERSION; the changed file makes the fridge see a new
 // worker, which waits until someone taps "Update" in the app.
-const VERSION = '1.8.0';
+const VERSION = '1.9.0';
 const CACHE = 'fatade-kitchen-' + VERSION;
-const FILES = ['./', './index.html', './prices.js', './recipes.js', './family.js', './glucose.js', './profiles.js', './hungry.js','./family.css', './theme.css','./manifest.json', './icon.svg'];
+const FILES = ['./', './index.html', './prices.js', './recipes.js', './family.js', './glucose.js', './profiles.js', './hungry.js', './votes.js','./family.css', './theme.css','./manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))));

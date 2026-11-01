@@ -3,12 +3,22 @@
 /* ---------- Profiles & colour themes ---------- */
 const PALETTE = [['Burgundy','#8C1D2F'],['Ruby','#C62E3B'],['Rose','#B0306A'],['Plum','#7B3FA0'],['Navy','#1F4E8C'],
   ['Sky','#0A6CFF'],['Emerald','#0F7B5F'],['Tangerine','#E0701F'],['Gold','#B8860B'],['Graphite','#3A3A3C']];
-const profiles = () => db.profiles ||= [
-  {id:'family', name:'Fatade Family', color:'#8C1D2F'},   // burgundy from the family Christmas photo
-  {id:'daddy',  name:db.names.me,     color:'#1F4E8C'},
-  {id:'mummy',  name:db.names.wife,   color:'#B0306A'},
-  {id:'kids',   name:db.names.kids,   color:'#E0701F'},
-];
+const KID_DEFAULTS = [['k1','Kid 1','#E0701F'], ['k2','Kid 2','#7B3FA0'], ['k3','Kid 3','#0F7B5F'], ['k4','Kid 4','#0A6CFF']];
+const newKids = () => KID_DEFAULTS.map(([id, name, color]) => ({id, name, color, role:'kid'}));
+function profiles(){
+  if(!db.profiles) db.profiles = [
+    {id:'family', name:'Fatade Family', color:'#8C1D2F', role:'family'},   // burgundy from the family Christmas photo
+    {id:'daddy',  name:db.names.me,     color:'#1F4E8C', role:'parent'},
+    {id:'mummy',  name:db.names.wife,   color:'#B0306A', role:'parent'},
+    ...newKids()];
+  // Older versions had one shared "Kids" profile; each child now has their own (for voting)
+  if(!db.profiles.some(p => p.role === 'kid')){
+    db.profiles = db.profiles.filter(p => p.id !== 'kids').map(p => ({...p, role: p.id === 'family' ? 'family' : p.role || 'parent'}));
+    db.profiles.push(...newKids()); save();
+  }
+  return db.profiles;
+}
+const kidProfiles = () => profiles().filter(p => p.role === 'kid');
 const currentProfile = () => profiles().find(p => p.id === db.profile) || profiles()[0];
 const initials = n => (n || '?').split(/\s+/).filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('');
 const rgbOf = h => { const n = parseInt(h.slice(1), 16); return [n>>16 & 255, n>>8 & 255, n & 255]; };
@@ -41,8 +51,8 @@ function profileSettingsHtml(){
       <input type="text" class="pname-in" data-pn="${p.id}" value="${esc(p.name)}" aria-label="Profile name">
       <div class="swatches">${PALETTE.map(([n,c]) => `<button class="sw ${c===p.color?'on':''}" style="background:${c}" title="${n}" data-pc="${p.id}" data-c="${c}"></button>`).join('')}</div>
       ${i ? `<button class="iconbtn" data-pdel="${p.id}" title="Remove">✕</button>` : ''}</div>`).join('')}
-      <div class="lrow"><button class="btn tinted" id="addProfile">＋ Add a profile</button>
-        <span class="muted">Add one for each child — they'll love picking a colour.</span></div></div>`;
+      <div class="lrow"><button class="btn tinted" id="addProfile">＋ Add a child</button>
+        <span class="muted">Type each child's name — they vote as themselves and pick their own colour.</span></div></div>`;
 }
 function bindProfileSettings(){
   document.querySelectorAll('[data-pn]').forEach(i => i.onchange = () => {
@@ -54,7 +64,7 @@ function bindProfileSettings(){
     db.profiles = profiles().filter(x => x.id !== b.dataset.pdel); if(db.profile === b.dataset.pdel) db.profile = 'family'; save(); applyTheme(); render(); });
   $('#addProfile').onclick = () => {
     const used = profiles().map(p => p.color), c = (PALETTE.find(([,c]) => !used.includes(c)) || PALETTE[0])[1];
-    profiles().push({id:'p' + Date.now(), name:'New profile', color:c}); save(); render(); };
+    profiles().push({id:'p' + Date.now(), name:'New child', color:c, role:'kid'}); save(); render(); };
 }
 
 /* ---------- Settings code ----------
