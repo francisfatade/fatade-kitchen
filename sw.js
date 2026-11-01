@@ -1,7 +1,7 @@
 // Offline cache + update flow.
 // release.ps1 bumps VERSION; the changed file makes the fridge see a new
 // worker, which waits until someone taps "Update" in the app.
-const VERSION = '1.2.0';
+const VERSION = '1.2.1';
 const CACHE = 'fatade-kitchen-' + VERSION;
 const FILES = ['./', './index.html', './prices.js', './recipes.js', './manifest.json', './icon.svg'];
 

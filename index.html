@@ -255,8 +255,11 @@ function load(){
   try{ const raw = localStorage.getItem(KEY); if(raw) return JSON.parse(raw); }catch(e){}
   return {};
 }
-let db = Object.assign({names:{me:'Daddy',wife:'Mummy',kids:'Kids'}, home:{kids:4, zip:''}, plans:{}, custom:[], got:{}, extras:{}}, load());
+let db = Object.assign({names:{me:'Daddy',wife:'Mummy',kids:'Kids'}, home:{kids:4, zip:'', stores:["Whole Foods","Seabra's","Super Fresh"]}, plans:{}, custom:[], got:{}, extras:{}}, load());
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }
+// Saved settings from older versions lack newer fields
+db.home = Object.assign({kids:4, zip:'', stores:["Whole Foods","Seabra's","Super Fresh"]}, db.home);
+db.extras ||= {};
 
 /* ---------- Helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -277,7 +280,11 @@ function storeLink(g){
   if(p && p.store==='african') return db.home.zip
     ? `https://www.google.com/maps/search/${encodeURIComponent('African grocery store near '+db.home.zip)}`
     : AFRICAN_STORES[0].url;
-  return `https://www.walmart.com/search?q=${encodeURIComponent(g.replace(/\(.*?\)/g,'').split('/')[0].trim())}`;
+  return `https://www.wholefoodsmarket.com/search?text=${encodeURIComponent(g.replace(/\(.*?\)/g,'').split('/')[0].trim())}`;
+}
+// The family's usual supermarkets (editable in Settings); opens each store's locations near the ZIP
+function storeMap(name){
+  return `https://www.google.com/maps/search/${encodeURIComponent(name + (db.home.zip ? ' near '+db.home.zip : ''))}`;
 }
 let weekOffset = 0;
 
@@ -443,7 +450,7 @@ function shopRow(it, got){
   return `<label class="${got[g]?'got':''}"><input type="checkbox" data-g="${esc(g)}" ${got[g]?'checked':''}>
     <span>${esc(g)}${p?` <small class="muted">· ${packs} × ${esc(p.pack)}</small>`:''}</span><span class="spacer"></span>
     ${p?`<b>${money(cost)}</b>`:''}
-    <a class="buy" href="${storeLink(g)}" target="_blank" rel="noopener">${p&&p.store==='african'?'🌍 Find':'🛒 Walmart'}</a></label>`;
+    <a class="buy" href="${storeLink(g)}" target="_blank" rel="noopener">${p&&p.store==='african'?'🌍 Find':'🔎 Whole Foods'}</a></label>`;
 }
 function renderShop(){
   const wk = shopWeek(), got = db.got[wk] ||= {}, items = weekNeeds(wk), ex = extras(wk);
@@ -463,10 +470,12 @@ function renderShop(){
       ${money(left)} still to buy · estimates from ${PRICES_UPDATED} prices, before tax & shipping</div></div>` : ''}
     ${ex.length ? `<h3>Added by ${esc(db.names.wife)}</h3><div class="card shop">${ex.map((x,i)=>`<label class="${x.got?'got':''}">
       <input type="checkbox" data-x="${i}" ${x.got?'checked':''}><span>${esc(x.name)}</span><span class="spacer"></span>
-      <a class="buy" href="${storeLink(x.name)}" target="_blank" rel="noopener">🛒 Walmart</a>
+      <a class="buy" href="${storeLink(x.name)}" target="_blank" rel="noopener">🔎 Whole Foods</a>
       <button class="chip" data-rm="${i}">✕</button></label>`).join('')}</div>` : ''}
     ${items.length ? `
-      <h3 style="margin-top:18px">🛒 Supermarket (Walmart, Kroger, any)</h3><div class="card shop">${sm.map(i=>shopRow(i,got)).join('')}</div>
+      <div class="row" style="margin-top:18px"><h3 style="margin:0">🛒 Supermarket</h3>
+        ${db.home.stores.map(s=>`<a class="rlink" href="${storeMap(s)}" target="_blank" rel="noopener">📍 ${esc(s)}</a>`).join('')}</div>
+      <div class="card shop" style="margin-top:8px">${sm.map(i=>shopRow(i,got)).join('')}</div>
       <h3 style="margin-top:18px">🌍 African grocer</h3><div class="card shop">${af.map(i=>shopRow(i,got)).join('')}</div>
       <h3 style="margin-top:18px">Where to buy African ingredients</h3>
       <div class="card">${db.home.zip ? `<a class="rlink" href="${storeLink('Egusi')}" target="_blank" rel="noopener">📍 African grocers near ${esc(db.home.zip)}</a>`
@@ -621,6 +630,7 @@ function renderSettings(){
       <label>What the app calls the children<input type="text" id="sKids" value="${esc(db.names.kids)}"></label>
       <label>Number of children (for portions & costs)<input type="text" inputmode="numeric" id="sKidN" value="${db.home.kids}"></label>
       <label>ZIP code (to find African grocers near you)<input type="text" inputmode="numeric" id="sZip" value="${esc(db.home.zip)}" placeholder="e.g. 77072"></label>
+      <label>Stores you shop at (separate with commas)<input type="text" id="sStores" value="${esc(db.home.stores.join(', '))}"></label>
       <div><button class="btn" id="sSave">Save</button></div>
     </div>
     <h2 style="margin-top:28px">App updates</h2>
@@ -632,7 +642,8 @@ function renderSettings(){
       <button class="btn ghost" id="imp">Restore from backup</button>
       <span class="muted">Plans are saved on this fridge only.</span></div>`;
   $('#sSave').onclick=()=>{ db.names={me:$('#sMe').value.trim()||'Daddy', wife:$('#sWife').value.trim()||'Mummy', kids:$('#sKids').value.trim()||'Kids'};
-    db.home={kids:Math.max(0, parseInt($('#sKidN').value)||0), zip:$('#sZip').value.trim().slice(0,10)}; save(); view='today'; render(); };
+    db.home={kids:Math.max(0, parseInt($('#sKidN').value)||0), zip:$('#sZip').value.trim().slice(0,10),
+      stores:$('#sStores').value.split(',').map(s=>s.trim()).filter(Boolean)}; save(); view='today'; render(); };
   $('#chkUpd').onclick=async()=>{ $('#updMsg').textContent='Checking…'; $('#updMsg').textContent = await checkForUpdates(); };
   $('#exp').onclick=async()=>{ const t=JSON.stringify(db); try{ await navigator.clipboard.writeText(t); alert('Backup copied.'); }catch(e){ prompt('Copy this backup text:', t); } };
   $('#imp').onclick=()=>{ const t=prompt('Paste backup text:'); if(!t) return;
