@@ -175,8 +175,25 @@ function bindHungrySettings(){
   on('recDel', async () => { if(confirm('Delete your recorded dinner call?')){ await CallRec.remove(); render(); } });
   on('hgUseRec', () => { c.useRec = !c.useRec; save(); render(); });
 }
+/* Daddy's song, delivered with an app update. Bump v to send a new one;
+   once installed (or deleted by the family) the same version isn't fetched again. */
+const DINNER_SONG = {v: 1, url: 'sounds/call-xj9rny8fg2.m4a', name: "Daddy's song"};
+async function installUpdateSong(){
+  const c = hungryCfg();
+  if((c.songV || 0) >= DINNER_SONG.v) return;
+  try{
+    const r = await fetch(DINNER_SONG.url, {cache: 'no-store'}); if(!r.ok) return;
+    const blob = await r.blob(); if(blob.size < 1000) return;
+    await CallRec.tx('readwrite', s => s.put(new Blob([blob], {type: 'audio/mp4'}), 'dinnerCall'));
+    await CallRec.load();
+    c.songV = DINNER_SONG.v; c.useRec = true; save();
+    toast(`🎵 ${DINNER_SONG.name} is now the dinner call.`);
+    if(view === 'settings') render();
+  }catch(e){ /* offline: try again next start */ }
+}
+
 function hungryInit(){
   const c = hungryCfg(); if(c.useRec === undefined) c.useRec = true;
-  CallRec.load();
+  CallRec.load().then(installUpdateSong);
   hungryCheck(); setInterval(hungryCheck, 30000);
 }
