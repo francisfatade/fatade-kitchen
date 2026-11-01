@@ -230,6 +230,32 @@ label input{margin-top:6px;color:var(--ink)}
 .vstat{align-self:flex-start;font-size:13px;font-weight:700;border-radius:999px;padding:4px 10px;background:var(--green-soft);color:var(--green)}
 .vstat.locked{background:rgba(47,180,87,.14);color:#1F8A42}
 
+/* Software Update card (top of Settings) */
+.upd-settings{margin-top:4px}
+.us-top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.us-top b{display:block;font-size:19px}
+.us-top small{color:var(--muted);font-size:14px}
+.us-ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;color:#fff;background:linear-gradient(140deg,#5AA0FF,#0A6CFF)}
+.us-btn{padding:14px 26px;font-size:18px}
+.us-auto{margin-top:12px}
+
+/* Full-screen updating view */
+#updOverlay{position:fixed;inset:0;z-index:300;display:none;align-items:center;justify-content:center;padding:24px;
+  background:linear-gradient(150deg,rgba(var(--accent-rgb),.96),rgba(18,18,20,.97));-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);color:#fff}
+#updOverlay.on{display:flex;animation:fadein .3s}
+@keyframes fadein{from{opacity:0}}
+.upd-card{width:min(520px,100%);text-align:center}
+.upd-logo{width:96px;height:96px;margin:0 auto 22px;border-radius:28px;display:grid;place-items:center;
+  background:rgba(255,255,255,.14);box-shadow:0 10px 40px rgba(0,0,0,.25);animation:breathe 2s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.05)}}
+.upd-card h2{color:#fff;font-size:30px;margin:0 0 6px}
+.upd-yo{font-size:17px;font-style:italic;opacity:.85}
+.upd-bar{height:10px;border-radius:999px;background:rgba(255,255,255,.18);overflow:hidden;margin:34px 0 12px}
+.upd-bar span{display:block;height:100%;width:0;border-radius:999px;background:#fff;box-shadow:0 0 18px rgba(255,255,255,.6)}
+.upd-row{display:flex;justify-content:space-between;font-size:16px;font-weight:600;opacity:.95}
+.upd-note{margin-top:22px;font-size:15px;opacity:.75}
+.upd-btn{margin-top:22px;background:#fff!important;color:#1c1c1e!important}
+
 /* Celebration */
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:120;overflow:hidden}
 .confetti i{position:absolute;top:-40px;left:var(--x);font-size:30px;font-style:normal;animation:fall var(--d) ease-in forwards}

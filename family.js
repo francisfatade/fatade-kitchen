@@ -152,10 +152,7 @@ async function checkAppUpdate(){
     if(info.versionCode <= appVersionCode()) return;
     $('#appBarMsg').textContent = `📲 New tablet app ${info.versionName} — ${info.notes || 'improvements'}`;
     $('#appBar').classList.add('on');
-    $('#appBarBtn').onclick = () => {
-      if(NATIVE.installUpdate){ $('#appBarBtn').textContent = 'Downloading…'; NATIVE.installUpdate(APP_APK); }
-      else { $('#appBarMsg').textContent = '⬇️ Downloading in the browser — when it finishes, tap the download and choose Install.'; location.href = APP_APK_DIRECT; }
-    };
+    $('#appBarBtn').onclick = () => { $('#appBar').classList.remove('on'); runFullUpdate(); };
   }catch(e){}
 }
 window.__appUpdate = s => {
