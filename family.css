@@ -1,0 +1,68 @@
+/* Branding, photos, screensaver and portrait layout (see family.js) */
+:root{ --veil:rgba(251,247,240,.88); }
+@media (prefers-color-scheme: dark){ :root{ --veil:rgba(20,24,21,.88); } }
+html{background:var(--bg)}
+body.has-photo{background:transparent}
+#backdrop{position:fixed;inset:-20px;z-index:-1;background:center/cover no-repeat;filter:blur(8px);display:none}
+body.has-photo #backdrop{display:block}
+#backdrop::after{content:'';position:absolute;inset:0;background:var(--veil)}
+
+/* Today banner */
+.hero{position:relative;height:clamp(220px,34vh,420px);border-radius:24px;overflow:hidden;margin-bottom:20px;
+  background:center 28%/cover no-repeat;box-shadow:0 8px 30px rgba(0,0,0,.18)}
+.hero.nophoto{background:linear-gradient(135deg,#7a1e2c,#b23a3a 45%,#1f6f4a)}
+.hero-txt{position:absolute;left:0;right:0;bottom:0;padding:22px 26px;color:#fff;
+  background:linear-gradient(transparent,rgba(0,0,0,.65))}
+.hero-title{font-size:clamp(28px,4.4vw,44px);font-weight:800;letter-spacing:.3px;text-shadow:0 2px 10px rgba(0,0,0,.4)}
+.hero-sub{font-size:20px;font-style:italic;opacity:.95}
+.hero .btn{margin-top:10px}
+
+/* Photo manager */
+.photos{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
+.ph{position:relative;aspect-ratio:3/4;border-radius:14px;background:center/cover;border:3px solid transparent;display:flex;gap:6px;
+  align-items:flex-start;justify-content:flex-end;padding:6px}
+.ph.bg{border-color:var(--green)}
+.ph .chip{padding:4px 10px;background:rgba(255,255,255,.9);color:#1d2420}
+.ph.add{border:2px dashed var(--line);flex-direction:column;align-items:center;justify-content:center;font-size:40px;color:var(--muted);cursor:pointer}
+.ph.add span{font-size:16px;font-weight:600}
+
+/* Screensaver */
+#saver{position:fixed;inset:0;z-index:100;background:#0d0f0e;display:none;overflow:hidden;cursor:pointer}
+#saver.on{display:block}
+.ss-img{position:absolute;inset:0;opacity:0;transition:opacity 2s}
+/* blurred fill behind, whole photo (never cropped) in front */
+.ss-img::before{content:'';position:absolute;inset:-40px;background:var(--img) center/cover no-repeat;filter:blur(30px) brightness(.55)}
+.ss-img::after{content:'';position:absolute;inset:0;background:var(--img) center/contain no-repeat}
+.ss-img.show{opacity:1;animation:kenburns 14s ease-out forwards}
+@keyframes kenburns{from{transform:scale(1)}to{transform:scale(1.07)}}
+#saver:not(:has(.ss-img.show)){background:linear-gradient(135deg,#3a0f17,#7a1e2c 50%,#12392a)}
+.ss-info{position:absolute;left:0;right:0;bottom:0;padding:40px 44px 48px;color:#fff;
+  background:linear-gradient(transparent,rgba(0,0,0,.75));text-shadow:0 2px 12px rgba(0,0,0,.5)}
+.ss-time{font-size:clamp(64px,11vw,120px);font-weight:300;line-height:1}
+.ss-date{font-size:26px;margin-top:6px}
+.ss-greet{font-size:24px;font-style:italic;opacity:.9;margin-top:4px}
+.ss-meal{font-size:22px;margin-top:10px;font-weight:600}
+
+/* Portrait: bottom tab bar + roomier cards (the tablet's main orientation) */
+.ni{display:none}
+@media (orientation: portrait){
+  nav{position:fixed;top:auto;bottom:0;left:0;right:0;z-index:30;justify-content:space-around;gap:4px;
+    padding:6px 8px calc(8px + env(safe-area-inset-bottom));border-top:1px solid var(--line);border-bottom:0;
+    box-shadow:0 -6px 20px rgba(0,0,0,.08)}
+  nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:0;padding:8px 4px;border-radius:16px;font-size:16px}
+  nav button small{margin:0;font-size:13px}
+  .ni{display:block;font-size:28px;line-height:1.1}
+  main{padding-bottom:130px}
+  .grid{grid-template-columns:1fr 1fr}
+  .updatebar{flex-wrap:wrap}
+}
+@media (orientation: portrait) and (max-width:560px){ .grid{grid-template-columns:1fr} }
+
+/* Portrait week: one card per day */
+.days{display:grid;gap:14px}
+.day.today{outline:3px solid var(--green)}
+.day h3{margin:0}
+.dslots{display:grid;gap:8px;grid-template-columns:1fr 1fr;margin-top:10px}
+.dcell{display:flex;flex-direction:column;gap:2px;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:8px 10px;font-size:16px;min-height:70px}
+.dcell .lab{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.dcell.skip{color:var(--muted);font-style:italic}

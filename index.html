@@ -101,26 +101,30 @@ nav small{font-weight:500;font-style:italic;opacity:.75;margin-left:2px}
   .week{grid-template-columns:110px repeat(7,120px)}
 }
 </style>
+<link rel="stylesheet" href="family.css">
 </head>
 <body>
+<div id="backdrop"></div>
 <header>
   <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="34" r="22" fill="#fff" opacity=".18"/><path d="M14 34h36a18 18 0 0 1-36 0z" fill="#fff"/><path d="M24 14c0 6 4 6 4 12M32 12c0 6 4 6 4 12M40 14c0 6 4 6 4 12" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
   <h1>Fatade Kitchen</h1>
   <div class="date" id="hdrDate"></div>
 </header>
 <nav id="nav">
-  <button data-v="today" class="on">Today <small>Òní</small></button>
-  <button data-v="week">This week <small>Ọ̀sẹ̀ yìí</small></button>
-  <button data-v="shop">Shopping <small>Ọjà</small></button>
-  <button data-v="meals">Meals <small>Oúnjẹ</small></button>
-  <button data-v="settings">Settings <small>Ètò</small></button>
+  <button data-v="today" class="on"><span class="ni">🏠</span>Today <small>Òní</small></button>
+  <button data-v="week"><span class="ni">📅</span>This week <small>Ọ̀sẹ̀ yìí</small></button>
+  <button data-v="shop"><span class="ni">🛒</span>Shopping <small>Ọjà</small></button>
+  <button data-v="meals"><span class="ni">🍲</span>Meals <small>Oúnjẹ</small></button>
+  <button data-v="settings"><span class="ni">⚙️</span>Settings <small>Ètò</small></button>
 </nav>
 <div class="updatebar" id="updateBar"><span>✨ A new version of Fatade Kitchen is ready.</span><button class="btn" id="updateBtn">Update now</button></div>
 <main id="main"></main>
 <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
+<div id="saver" onclick="Saver.poke()"><div class="ss-img"></div><div class="ss-img"></div><div class="ss-info"></div></div>
 
 <script src="prices.js"></script>
 <script src="recipes.js"></script>
+<script src="family.js"></script>
 <script>
 /* ---------- Meal library ----------
    cats: breakfast | lunchbox | lunch | dinner | late
@@ -336,7 +340,7 @@ function renderToday(){
   const tWk = d===6 ? weekKey(1) : wk, tD = (d+1)%7;
   const prep = [...new Set(slotsFor(tD).map(s=>getPick(tWk,tD,s.id)).map(id=>id&&mealById(id)).filter(m=>m&&m.prep).map(m=>`${m.prep} — for ${m.name}`))];
   const late = getPick(wk,d,'meLate'), lateM = late && late!=='skip' && mealById(late);
-  $('#main').innerHTML = `
+  $('#main').innerHTML = `${heroHtml()}
     ${lateM ? `<div class="banner"><span class="big">🌙</span><div><h3>Late plate for ${esc(db.names.me)}</h3>
       ${lateM.em} <b>${esc(lateM.name)}</b> — set it aside before dinner is served.</div></div>` : ''}
     <div class="row"><h2>${DAYS_LONG[d]}'s meals <span class="yo-h">${DAYS_YO[d]} · Oúnjẹ òní</span></h2><span class="spacer"></span>
@@ -350,6 +354,7 @@ function renderToday(){
       <span class="muted">Swallow: oat, wheat or unripe-plantain flour, small. Avoid eba, pounded yam, white bread, sweet drinks. Follow your doctor's targets.</span></div>`;
   $('#main').querySelectorAll('.slot').forEach(b=>b.onclick=e=>{ if(!e.target.closest('a')) openPicker(wk, +b.dataset.day, b.dataset.slot); });
   const f = $('#fillToday'); if(f) f.onclick = ()=>{ autofill(wk,[d]); render(); };
+  const h = $('#heroAdd'); if(h) h.onclick = ()=>{ view='settings'; render(); };
 }
 
 function renderWeek(){
@@ -361,7 +366,17 @@ function renderWeek(){
     <span class="spacer"></span>
     <button class="btn" id="fillWeek">✨ Fill empty slots</button>
     <button class="btn warn" id="clearWeek">Clear week</button></div>
-  <div class="week"><div></div>${DAYS.map((d,i)=>`<div class="hd ${i===ti?'today':''}">${d} ${dates[i].getDate()}<br><small>${DAYS_YO[i]}</small></div>`).join('')}`;
+  `;
+  if(matchMedia('(orientation: portrait)').matches){
+    // Tall screen: one card per day instead of a wide grid
+    html += `<div class="days">${DAYS.map((_,i)=>`<div class="card day ${i===ti?'today':''}">
+      <div class="row"><h3>${DAYS_LONG[i]} ${dates[i].getDate()}</h3><span class="yo-h">${DAYS_YO[i]}</span></div>
+      <div class="dslots">${slotsFor(i).map(s=>{ const p=getPick(wk,i,s.id), m=p && p!=='skip' && mealById(p);
+        return `<button class="dcell cell ${p==='skip'?'skip':''}" data-day="${i}" data-slot="${s.id}">
+          <span class="lab who-${s.who}">${esc(s.label(db.names,i>=5))}</span>
+          ${m ? `<span>${m.em} ${esc(m.name)}</span>` : p==='skip' ? 'skip' : '<span class="muted">＋ choose</span>'}</button>`; }).join('')}</div></div>`).join('')}`;
+  } else {
+  html += `<div class="week"><div></div>${DAYS.map((d,i)=>`<div class="hd ${i===ti?'today':''}">${d} ${dates[i].getDate()}<br><small>${DAYS_YO[i]}</small></div>`).join('')}`;
   for(const s of SLOTS){
     html += `<div class="lab who-${s.who}">${esc(s.label(db.names,false))}</div>`;
     for(let i=0;i<7;i++){
@@ -370,6 +385,7 @@ function renderWeek(){
       html += `<button class="cell ${p==='skip'?'skip':''}" data-day="${i}" data-slot="${s.id}">
         ${m ? `<span class="em">${m.em}</span>${esc(m.name)}` : p==='skip' ? 'skip' : '<span class="muted">＋</span>'}</button>`;
     }
+  }
   }
   $('#main').innerHTML = html + '</div>';
   $('#main').querySelectorAll('button.cell').forEach(b=>b.onclick=()=>openPicker(wk,+b.dataset.day,b.dataset.slot));
@@ -460,7 +476,7 @@ function renderShop(){
   $('#main').innerHTML = `
     <div class="card voice">
       <button class="mic" id="mic" aria-label="Talk to add items">🎤</button>
-      <div style="flex:1"><div class="reply" id="vReply">${SR ? `Tap the mic and say “add rice and two tins of tomatoes”.` : `Voice needs Chrome on the fridge — you can type below.`}</div>
+      <div style="flex:1"><div class="reply" id="vReply">${canVoice ? `Tap the mic and say “add rice and two tins of tomatoes”.` : `Voice isn't available on this device — you can type below.`}</div>
         <div class="said" id="vSaid"></div>
         <div class="row" style="margin-top:10px"><input type="text" id="addTxt" placeholder="Or type an item and press Add" style="flex:1"><button class="btn" id="addBtn">Add</button></div></div>
     </div>
@@ -496,6 +512,10 @@ function renderShop(){
 /* ---------- Voice assistant ---------- */
 // Uses the browser's built-in speech recognition (Chrome on Android) and speech synthesis.
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+// Inside the installed Android app the browser speech APIs don't exist; the app provides its own (family.js NATIVE)
+const canVoice = NATIVE ? NATIVE.voiceAvailable() : !!SR;
+// English voices can't read tone marks, so spell the Yoruba phrases out phonetically
+const sayable = t => t.replace(/Ó dáa/g,'Oh dah').replace(/Ẹ nlẹ́/g,'Eh nleh');
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 function splitItems(t){
   return t.replace(/\b(to|on|onto)\s+(the|my|our)?\s*(shopping\s+)?list\b/gi,'').replace(/\bplease\b/gi,'')
@@ -544,45 +564,53 @@ const voice = {
   active:false, rec:null, said:'', reply:'',
   paint(){
     const mic = $('#mic'); if(!mic) return;
-    mic.classList.toggle('live', this.active); mic.textContent = this.active ? '■' : '🎤'; mic.disabled = !SR;
+    mic.classList.toggle('live', this.active); mic.textContent = this.active ? '■' : '🎤'; mic.disabled = !canVoice;
     if(this.reply) $('#vReply').textContent = this.reply;
     $('#vSaid').textContent = this.said ? `You said: “${this.said}”` : '';
   },
   speak(text, then){
     this.reply = text; this.paint();
+    if(NATIVE){ window.__ttsDone = () => { window.__ttsDone = null; then && then(); }; NATIVE.speak(sayable(text)); return; }
     if(!window.speechSynthesis){ then && then(); return; }
     speechSynthesis.cancel();
-    // English voices can't read tone marks, so spell the Yoruba phrases out phonetically
-    const u = new SpeechSynthesisUtterance(text.replace(/Ó dáa/g,'Oh dah').replace(/Ẹ nlẹ́/g,'Eh nleh'));
+    const u = new SpeechSynthesisUtterance(sayable(text));
     u.lang = 'en-US'; u.rate = 1;
     u.onend = () => then && then();
     speechSynthesis.speak(u);
   },
   start(){
-    if(!SR) return;
+    if(!canVoice) return;
     this.active = true; this.said = ''; this.paint();
     this.speak(`Ẹ nlẹ́, ${db.names.wife}! What should I add to the shopping list?`, () => this.listen());
   },
+  heard(final){
+    if(!this.active) return;
+    if(!final){ this.stop('I didn\'t hear anything, so I stopped listening. Tap the mic to try again.'); return; }
+    const out = handleCommand(final);
+    if(view==='shop') render();
+    if(out.end){ this.active=false; this.speak(out.say); this.paint(); }
+    else this.speak(out.say, () => this.listen());
+  },
   listen(){
     if(!this.active) return;
+    if(NATIVE){
+      window.__sttPartial = t => { this.said = t; this.paint(); };
+      window.__sttResult = t => { this.said = t; this.heard(t); };
+      window.__sttError = e => { if(e==='not-allowed'){ this.active=false; this.speak('I need permission to use the microphone.'); } else this.heard(''); };
+      NATIVE.listen(); return;
+    }
     const r = this.rec = new SR();
     r.lang = 'en-NG'; r.interimResults = true; r.maxAlternatives = 1;
     let final = '';
     r.onresult = e => { const res = e.results[e.results.length-1]; this.said = res[0].transcript; if(res.isFinal) final = this.said; this.paint(); };
     r.onerror = e => { if(e.error==='not-allowed'){ this.active=false; this.speak('I need permission to use the microphone.'); } };
-    r.onend = () => {
-      if(!this.active) return;
-      if(!final){ this.stop('I didn\'t hear anything, so I stopped listening. Tap the mic to try again.'); return; }
-      const out = handleCommand(final);
-      if(view==='shop') render();
-      if(out.end){ this.active=false; this.speak(out.say); this.paint(); }
-      else this.speak(out.say, () => this.listen());
-    };
+    r.onend = () => this.heard(final);
     r.start();
   },
   stop(msg){
-    this.active = false; try{ this.rec && this.rec.abort(); }catch(e){}
-    if(msg) this.speak(msg); else { speechSynthesis && speechSynthesis.cancel(); this.paint(); }
+    this.active = false;
+    if(NATIVE) NATIVE.stopVoice(); else { try{ this.rec && this.rec.abort(); }catch(e){} }
+    if(msg) this.speak(msg); else { if(!NATIVE && window.speechSynthesis) speechSynthesis.cancel(); this.paint(); }
   },
 };
 
@@ -633,6 +661,7 @@ function renderSettings(){
       <label>Stores you shop at (separate with commas)<input type="text" id="sStores" value="${esc(db.home.stores.join(', '))}"></label>
       <div><button class="btn" id="sSave">Save</button></div>
     </div>
+    ${displaySettingsHtml()}
     <h2 style="margin-top:28px">App updates</h2>
     <div class="card row"><span>Version <b>${esc(appVersion||'—')}</b></span>
       <button class="btn ghost" id="chkUpd">Check for updates</button>
@@ -645,6 +674,7 @@ function renderSettings(){
     db.home={kids:Math.max(0, parseInt($('#sKidN').value)||0), zip:$('#sZip').value.trim().slice(0,10),
       stores:$('#sStores').value.split(',').map(s=>s.trim()).filter(Boolean)}; save(); view='today'; render(); };
   $('#chkUpd').onclick=async()=>{ $('#updMsg').textContent='Checking…'; $('#updMsg').textContent = await checkForUpdates(); };
+  bindDisplaySettings();
   $('#exp').onclick=async()=>{ const t=JSON.stringify(db); try{ await navigator.clipboard.writeText(t); alert('Backup copied.'); }catch(e){ prompt('Copy this backup text:', t); } };
   $('#imp').onclick=()=>{ const t=prompt('Paste backup text:'); if(!t) return;
     try{ db=Object.assign(db, JSON.parse(t)); save(); render(); alert('Restored.'); }catch(e){ alert('That backup text is not valid.'); } };
@@ -652,6 +682,7 @@ function renderSettings(){
 
 $('#nav').onclick = e => { const v = e.target.closest('button')?.dataset.v; if(v){ view=v; if(v==='today') weekOffset=0; render(); } };
 render();
+familyInit();
 // Refresh "today" after midnight on an always-on screen
 setInterval(()=>{ if(view==='today') render(); }, 10*60*1000);
 /* ---------- Updates ---------- */
