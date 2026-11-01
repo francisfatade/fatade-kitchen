@@ -80,6 +80,21 @@ h3{font-size:19px;margin:0 0 6px}
 .shop label.got span{text-decoration:line-through;color:var(--muted)}
 input[type=text],textarea{font:inherit;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
 .form{display:grid;gap:12px;max-width:720px}
+.updatebar{display:none;align-items:center;gap:16px;padding:12px 24px;background:var(--green-soft);font-weight:600;font-size:19px}
+.updatebar.on{display:flex}
+.yo{display:block;font-size:.78em;font-weight:500;font-style:italic;color:var(--muted)}
+.yo-h{font-size:.7em;font-weight:500;font-style:italic;color:var(--muted);margin-left:6px}
+.yo-w{text-transform:none;letter-spacing:0;font-weight:600;font-style:italic;opacity:.8}
+nav small{font-weight:500;font-style:italic;opacity:.75;margin-left:2px}
+.rlink{color:var(--blue);font-weight:700;text-decoration:none;padding:4px 10px;border-radius:999px;background:var(--blue-soft)}
+.shop a.buy{font-size:15px;font-weight:700;text-decoration:none;color:var(--blue);white-space:nowrap}
+.mic{width:96px;height:96px;border-radius:50%;border:0;background:var(--orange);color:#fff;font-size:44px;flex:none}
+.mic.live{animation:pulse 1.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(217,98,43,.55)}100%{box-shadow:0 0 0 26px rgba(217,98,43,0)}}
+.voice{display:flex;gap:18px;align-items:center;margin-bottom:18px}
+.voice .said{font-size:17px;color:var(--muted);min-height:24px}
+.voice .reply{font-size:21px;font-weight:600}
+.updatebar .btn{margin-left:auto}
 @media (max-width:640px){
   header{padding:12px 16px} header h1{font-size:21px}
   nav,main{padding-left:16px;padding-right:16px}
@@ -94,15 +109,18 @@ input[type=text],textarea{font:inherit;width:100%;padding:12px 14px;border-radiu
   <div class="date" id="hdrDate"></div>
 </header>
 <nav id="nav">
-  <button data-v="today" class="on">Today</button>
-  <button data-v="week">This week</button>
-  <button data-v="shop">Shopping</button>
-  <button data-v="meals">Meals</button>
-  <button data-v="settings">Settings</button>
+  <button data-v="today" class="on">Today <small>Òní</small></button>
+  <button data-v="week">This week <small>Ọ̀sẹ̀ yìí</small></button>
+  <button data-v="shop">Shopping <small>Ọjà</small></button>
+  <button data-v="meals">Meals <small>Oúnjẹ</small></button>
+  <button data-v="settings">Settings <small>Ètò</small></button>
 </nav>
+<div class="updatebar" id="updateBar"><span>✨ A new version of Fatade Kitchen is ready.</span><button class="btn" id="updateBtn">Update now</button></div>
 <main id="main"></main>
 <div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
 
+<script src="prices.js"></script>
+<script src="recipes.js"></script>
 <script>
 /* ---------- Meal library ----------
    cats: breakfast | lunchbox | lunch | dinner | late
@@ -217,16 +235,19 @@ const BASE_MEALS = [
 ];
 
 const SLOTS = [
-  {id:'kidsBf',  who:'kids',   cats:['breakfast'], label:s=>`${s.kids} breakfast`},
-  {id:'kidsBox', who:'kids',   cats:['lunchbox'],  label:s=>`${s.kids} lunchbox`, weekdayOnly:true},
-  {id:'wifeBf',  who:'wife',   cats:['breakfast'], label:s=>`${s.wife}'s breakfast`},
-  {id:'meBf',    who:'me',     cats:['breakfast'], d:1, label:(s,we)=>we?`${s.me}'s breakfast`:`${s.me}'s breakfast to go`},
-  {id:'meLunch', who:'me',     cats:['lunch'],     d:1, label:s=>`${s.me}'s lunch pack`, weekdayOnly:true},
-  {id:'dinner',  who:'family', cats:['dinner'],    label:()=>`Family dinner`},
-  {id:'meLate',  who:'me',     cats:['late'],      d:1, label:s=>`${s.me}'s late plate`},
+  {id:'kidsBf',  who:'kids',   cats:['breakfast'], yo:'Oúnjẹ àárọ̀', label:s=>`${s.kids} breakfast`},
+  {id:'kidsBox', who:'kids',   cats:['lunchbox'],  yo:'Oúnjẹ ilé-ìwé', label:s=>`${s.kids} lunchbox`, weekdayOnly:true},
+  {id:'wifeBf',  who:'wife',   cats:['breakfast'], yo:'Oúnjẹ àárọ̀', label:s=>`${s.wife}'s breakfast`},
+  {id:'meBf',    who:'me',     cats:['breakfast'], d:1, yo:'Oúnjẹ àárọ̀', label:(s,we)=>we?`${s.me}'s breakfast`:`${s.me}'s breakfast to go`},
+  {id:'meLunch', who:'me',     cats:['lunch'],     d:1, yo:'Oúnjẹ ọ̀sán', label:s=>`${s.me}'s lunch pack`, weekdayOnly:true},
+  {id:'dinner',  who:'family', cats:['dinner'],    yo:'Oúnjẹ alẹ́', label:()=>`Family dinner`},
+  {id:'meLate',  who:'me',     cats:['late'],      d:1, yo:'Oúnjẹ òru', label:s=>`${s.me}'s late plate`},
 ];
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 const DAYS_LONG = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const DAYS_YO = ['Ọjọ́ Ajé','Ọjọ́ Ìṣẹ́gun','Ọjọ́rú','Ọjọ́bọ̀','Ọjọ́ Ẹtì','Ọjọ́ Àbámẹ́ta','Ọjọ́ Àìkú'];
+const yoName = m => m && (m.yo || YO_NAMES[m.id]);
+function greeting(){ const h = new Date().getHours(); return h<12 ? 'Ẹ káàárọ̀' : h<16 ? 'Ẹ káàsán' : h<21 ? 'Ẹ kúrọ̀lẹ́' : 'Ó dàárọ̀'; }
 
 /* ---------- Storage ---------- */
 const KEY = 'fatadeKitchen.v1';
@@ -234,14 +255,30 @@ function load(){
   try{ const raw = localStorage.getItem(KEY); if(raw) return JSON.parse(raw); }catch(e){}
   return {};
 }
-let db = Object.assign({names:{me:'Daddy',wife:'Mummy',kids:'Kids'}, plans:{}, custom:[], got:{}}, load());
+let db = Object.assign({names:{me:'Daddy',wife:'Mummy',kids:'Kids'}, home:{kids:4, zip:''}, plans:{}, custom:[], got:{}, extras:{}}, load());
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }
 
 /* ---------- Helpers ---------- */
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const allMeals = () => BASE_MEALS.concat(db.custom);
+const allMeals = () => BASE_MEALS.concat(YORUBA_MEALS, WEB_MEALS, db.custom);
 const mealById = id => allMeals().find(m => m.id === id);
+const recipeOf = m => m.recipe || RECIPES[m.id];
+const money = n => '$' + n.toFixed(2);
+
+/* ---------- Costs ---------- */
+// PRICES[].use is the share of a pack one family-of-6 meal uses; scale by who's eating.
+function servingsFor(slot){ return slot.who==='kids' ? db.home.kids : slot.who==='family' ? db.home.kids+2 : 1; }
+function mealCost(m, servings){
+  return m.ing.reduce((t,g)=> PRICES[g] ? t + PRICES[g].price*PRICES[g].use*servings/6 : t, 0);
+}
+function storeLink(g){
+  const p = PRICES[g];
+  if(p && p.store==='african') return db.home.zip
+    ? `https://www.google.com/maps/search/${encodeURIComponent('African grocery store near '+db.home.zip)}`
+    : AFRICAN_STORES[0].url;
+  return `https://www.walmart.com/search?q=${encodeURIComponent(g.replace(/\(.*?\)/g,'').split('/')[0].trim())}`;
+}
 let weekOffset = 0;
 
 function mondayOf(d){ const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x; }
@@ -267,7 +304,7 @@ function fmtDate(d){ return d.toLocaleDateString(undefined,{weekday:'long', day:
 let view = 'today';
 function render(){
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on', b.dataset.v===view));
-  $('#hdrDate').textContent = fmtDate(new Date());
+  $('#hdrDate').innerHTML = `<b>${greeting()}!</b><br>${fmtDate(new Date())}`;
   ({today:renderToday, week:renderWeek, shop:renderShop, meals:renderMeals, settings:renderSettings})[view]();
 }
 
@@ -275,10 +312,12 @@ function slotCard(wk, day, slot){
   const we = day>=5, pick = getPick(wk, day, slot.id), m = pick && pick!=='skip' ? mealById(pick) : null;
   const tip = m && (slot.who==='me' || slot.who==='family') && m.tip ? `<div class="tip">💚 ${esc(m.tip)}</div>` : '';
   const warn = m && slot.who==='family' && !m.d ? `<div><span class="pill p-x">${esc(db.names.me)}: use the swap tip</span></div>` : '';
+  const meta = m ? `<span class="row muted" style="font-size:15px">≈ ${money(mealCost(m, servingsFor(slot)))}
+    ${recipeOf(m) ? `<a class="rlink" href="${recipeOf(m)}" target="_blank" rel="noopener">📖 Recipe</a>` : ''}</span>` : '';
   return `<button class="slot ${m?'':'empty'}" data-day="${day}" data-slot="${slot.id}">
-    <span class="who who-${slot.who}">${esc(slot.label(db.names, we))}</span>
-    <span class="meal">${m?`<span class="em">${m.em}</span>${esc(m.name)}`: pick==='skip' ? 'Skipping' : '＋ Tap to choose'}</span>
-    ${warn}${tip}
+    <span class="who who-${slot.who}">${esc(slot.label(db.names, we))} <span class="yo-w">· ${slot.yo}</span></span>
+    <span class="meal">${m?`<span class="em">${m.em}</span><span>${esc(m.name)}${yoName(m)?`<span class="yo">${esc(yoName(m))}</span>`:''}</span>`: pick==='skip' ? 'Skipping' : '＋ Tap to choose'}</span>
+    ${meta}${warn}${tip}
   </button>`;
 }
 
@@ -293,7 +332,7 @@ function renderToday(){
   $('#main').innerHTML = `
     ${lateM ? `<div class="banner"><span class="big">🌙</span><div><h3>Late plate for ${esc(db.names.me)}</h3>
       ${lateM.em} <b>${esc(lateM.name)}</b> — set it aside before dinner is served.</div></div>` : ''}
-    <div class="row"><h2>${DAYS_LONG[d]}'s meals</h2><span class="spacer"></span>
+    <div class="row"><h2>${DAYS_LONG[d]}'s meals <span class="yo-h">${DAYS_YO[d]} · Oúnjẹ òní</span></h2><span class="spacer"></span>
       ${empty ? `<button class="btn" id="fillToday">✨ Suggest ${empty} meal${empty>1?'s':''}</button>` : ''}</div>
     <div class="grid">${slots.map(s=>slotCard(wk,d,s)).join('')}</div>
     <h2 style="margin-top:28px">Prep tonight for tomorrow</h2>
@@ -302,7 +341,7 @@ function renderToday(){
     <h2 style="margin-top:28px">${esc(db.names.me)}'s plate rule</h2>
     <div class="card">½ plate vegetables · ¼ protein (fish, chicken, eggs, beans) · ¼ carbs (fist-size).<br>
       <span class="muted">Swallow: oat, wheat or unripe-plantain flour, small. Avoid eba, pounded yam, white bread, sweet drinks. Follow your doctor's targets.</span></div>`;
-  $('#main').querySelectorAll('.slot').forEach(b=>b.onclick=()=>openPicker(wk, +b.dataset.day, b.dataset.slot));
+  $('#main').querySelectorAll('.slot').forEach(b=>b.onclick=e=>{ if(!e.target.closest('a')) openPicker(wk, +b.dataset.day, b.dataset.slot); });
   const f = $('#fillToday'); if(f) f.onclick = ()=>{ autofill(wk,[d]); render(); };
 }
 
@@ -315,7 +354,7 @@ function renderWeek(){
     <span class="spacer"></span>
     <button class="btn" id="fillWeek">✨ Fill empty slots</button>
     <button class="btn warn" id="clearWeek">Clear week</button></div>
-  <div class="week"><div></div>${DAYS.map((d,i)=>`<div class="hd ${i===ti?'today':''}">${d}<br><small>${dates[i].getDate()}</small></div>`).join('')}`;
+  <div class="week"><div></div>${DAYS.map((d,i)=>`<div class="hd ${i===ti?'today':''}">${d} ${dates[i].getDate()}<br><small>${DAYS_YO[i]}</small></div>`).join('')}`;
   for(const s of SLOTS){
     html += `<div class="lab who-${s.who}">${esc(s.label(db.names,false))}</div>`;
     for(let i=0;i<7;i++){
@@ -344,8 +383,12 @@ function autofill(wk, days){
       if(s.id==='meLate'){ // if dinner is a soup, the "soup only" bowl is easiest
         const dn = mealById(getPick(wk,d,'dinner')||''); if(dn && /swallow|starch/i.test(dn.name) && Math.random()<.5){ setPick(wk,d,s.id,'soup-only'); continue; }
       }
-      const fresh = pool.filter(m=>!(used[s.id]||new Set()).has(m.id) && m.id!=='soup-only');
-      const choice = (fresh.length?fresh:pool)[Math.floor(Math.random()*(fresh.length||pool.length))];
+      let fresh = pool.filter(m=>!(used[s.id]||new Set()).has(m.id) && m.id!=='soup-only');
+      if(!fresh.length) fresh = pool;
+      // Yoruba home cooking first: 70% of the time choose from Yoruba dishes when any fit
+      const yor = fresh.filter(m=>YORUBA_IDS.has(m.id));
+      if(yor.length && Math.random()<.7) fresh = yor;
+      const choice = fresh[Math.floor(Math.random()*fresh.length)];
       if(choice){ setPick(wk,d,s.id,choice.id); (used[s.id] ||= new Set()).add(choice.id); }
     }
   }
@@ -357,7 +400,7 @@ function openPicker(wk, day, slotId){
   const draw = () => {
     const list = candidates(slot, showAll);
     $('#sheet').innerHTML = `
-      <div class="row"><div><div class="who who-${slot.who}" style="font-weight:700">${DAYS_LONG[day]}</div>
+      <div class="row"><div><div class="who who-${slot.who}" style="font-weight:700">${DAYS_LONG[day]} · ${DAYS_YO[day]}</div>
         <h2 style="margin:2px 0">${esc(slot.label(db.names, day>=5))}</h2></div>
         <span class="spacer"></span>
         ${slot.d ? `<button class="chip ${showAll?'':'on'}" id="dOnly">💚 Blood-sugar friendly only</button>` : ''}
@@ -365,8 +408,9 @@ function openPicker(wk, day, slotId){
         ${cur ? `<button class="btn ghost" id="clr">Clear</button>`:''}
         <button class="btn ghost" id="close">✕</button></div>
       <div class="choices">${list.map(m=>`<button class="choice ${m.id===cur?'cur':''}" data-id="${m.id}">
-        <span class="em">${m.em}</span><span><b>${esc(m.name)}</b>
+        <span class="em">${m.em}</span><span><b>${esc(m.name)}</b>${yoName(m)?`<span class="yo">${esc(yoName(m))}</span>`:''}
         <small>${m.d?'<span class="pill p-d">💚 sugar-friendly</span>':''}${m.k?'<span class="pill p-k">kids</span>':''}${m.p?'<span class="pill p-p">packs</span>':''}</small>
+        <small>≈ ${money(mealCost(m, servingsFor(slot)))} for ${servingsFor(slot)}</small>
         ${slot.d && m.tip ? `<small>${esc(m.tip)}</small>`:''}</span></button>`).join('')}</div>`;
     $('#sheet').querySelectorAll('.choice').forEach(b=>b.onclick=()=>{ setPick(wk,day,slotId,b.dataset.id); closePicker(); });
     $('#skip').onclick=()=>{ setPick(wk,day,slotId,'skip'); closePicker(); };
@@ -379,35 +423,172 @@ function openPicker(wk, day, slotId){
 function closePicker(){ $('#scrim').classList.remove('on'); render(); }
 $('#scrim').onclick = e => { if(e.target.id==='scrim') closePicker(); };
 
-function renderShop(){
-  const wk = weekKey(0), counts = {};
+/* ---------- Shopping ---------- */
+// Shopping follows the week shown in "This week" (so Sunday-night planning for next week works).
+const shopWeek = () => weekKey();
+const extras = wk => db.extras[wk] ||= [];
+function weekNeeds(wk){
+  const need = {};
   for(let i=0;i<7;i++) for(const s of slotsFor(i)){
     const m = mealById(getPick(wk,i,s.id)||''); if(!m) continue;
-    for(const g of m.ing) counts[g] = (counts[g]||0)+1;
+    for(const g of m.ing) need[g] = (need[g]||0) + (PRICES[g] ? PRICES[g].use*servingsFor(s)/6 : 0);
   }
-  const items = Object.keys(counts).sort((a,b)=>a.localeCompare(b));
-  const got = db.got[wk] ||= {};
-  $('#main').innerHTML = `<div class="row"><h2>Shopping for this week</h2><span class="spacer"></span>
-      <button class="btn ghost" id="resetGot">Untick all</button></div>
-    ${items.length ? `<div class="card shop">${items.map(g=>`<label class="${got[g]?'got':''}">
-      <input type="checkbox" data-g="${esc(g)}" ${got[g]?'checked':''}><span>${esc(g)}</span>
-      <span class="spacer"></span><span class="muted">${counts[g]} meal${counts[g]>1?'s':''}</span></label>`).join('')}</div>`
-      : `<div class="card muted">Plan some meals in “This week” and the shopping list builds itself.</div>`}`;
-  $('#main').querySelectorAll('input[type=checkbox]').forEach(c=>c.onchange=()=>{
-    got[c.dataset.g]=c.checked; save(); c.parentElement.classList.toggle('got',c.checked); });
-  $('#resetGot').onclick=()=>{ db.got[wk]={}; save(); render(); };
+  return Object.entries(need).map(([g,n])=>{
+    const p = PRICES[g], packs = p ? Math.max(1, Math.ceil(n - 0.1)) : 0;
+    return {g, p, packs, cost: p ? packs*p.price : 0};
+  }).sort((a,b)=>a.g.localeCompare(b.g));
 }
+function shopRow(it, got){
+  const {g,p,packs,cost} = it;
+  return `<label class="${got[g]?'got':''}"><input type="checkbox" data-g="${esc(g)}" ${got[g]?'checked':''}>
+    <span>${esc(g)}${p?` <small class="muted">· ${packs} × ${esc(p.pack)}</small>`:''}</span><span class="spacer"></span>
+    ${p?`<b>${money(cost)}</b>`:''}
+    <a class="buy" href="${storeLink(g)}" target="_blank" rel="noopener">${p&&p.store==='african'?'🌍 Find':'🛒 Walmart'}</a></label>`;
+}
+function renderShop(){
+  const wk = shopWeek(), got = db.got[wk] ||= {}, items = weekNeeds(wk), ex = extras(wk);
+  const sm = items.filter(i=>!i.p || i.p.store!=='african'), af = items.filter(i=>i.p && i.p.store==='african');
+  const total = items.reduce((t,i)=>t+i.cost,0), left = items.filter(i=>!got[i.g]).reduce((t,i)=>t+i.cost,0);
+  const dates = weekDates();
+  $('#main').innerHTML = `
+    <div class="card voice">
+      <button class="mic" id="mic" aria-label="Talk to add items">🎤</button>
+      <div style="flex:1"><div class="reply" id="vReply">${SR ? `Tap the mic and say “add rice and two tins of tomatoes”.` : `Voice needs Chrome on the fridge — you can type below.`}</div>
+        <div class="said" id="vSaid"></div>
+        <div class="row" style="margin-top:10px"><input type="text" id="addTxt" placeholder="Or type an item and press Add" style="flex:1"><button class="btn" id="addBtn">Add</button></div></div>
+    </div>
+    <div class="row"><h2>Shopping · week of ${dates[0].toLocaleDateString(undefined,{day:'numeric',month:'short'})}</h2><span class="spacer"></span>
+      <button class="btn ghost" id="resetGot">Untick all</button></div>
+    ${items.length ? `<div class="banner"><span class="big">💵</span><div><h3>About ${money(total)} for this week's planned meals</h3>
+      ${money(left)} still to buy · estimates from ${PRICES_UPDATED} prices, before tax & shipping</div></div>` : ''}
+    ${ex.length ? `<h3>Added by ${esc(db.names.wife)}</h3><div class="card shop">${ex.map((x,i)=>`<label class="${x.got?'got':''}">
+      <input type="checkbox" data-x="${i}" ${x.got?'checked':''}><span>${esc(x.name)}</span><span class="spacer"></span>
+      <a class="buy" href="${storeLink(x.name)}" target="_blank" rel="noopener">🛒 Walmart</a>
+      <button class="chip" data-rm="${i}">✕</button></label>`).join('')}</div>` : ''}
+    ${items.length ? `
+      <h3 style="margin-top:18px">🛒 Supermarket (Walmart, Kroger, any)</h3><div class="card shop">${sm.map(i=>shopRow(i,got)).join('')}</div>
+      <h3 style="margin-top:18px">🌍 African grocer</h3><div class="card shop">${af.map(i=>shopRow(i,got)).join('')}</div>
+      <h3 style="margin-top:18px">Where to buy African ingredients</h3>
+      <div class="card">${db.home.zip ? `<a class="rlink" href="${storeLink('Egusi')}" target="_blank" rel="noopener">📍 African grocers near ${esc(db.home.zip)}</a>`
+        : `<span class="muted">Add your ZIP code in Settings to find African grocers near you.</span>`}
+        ${AFRICAN_STORES.map(s=>`<div style="padding:8px 0"><a class="rlink" href="${s.url}" target="_blank" rel="noopener">${esc(s.name)}</a> <span class="muted">${esc(s.note)}</span></div>`).join('')}</div>`
+      : `<div class="card muted">Plan some meals in “This week” and the shopping list builds itself.</div>`}`;
+  $('#main').querySelectorAll('input[data-g]').forEach(c=>c.onchange=()=>{
+    got[c.dataset.g]=c.checked; save(); render(); });
+  $('#main').querySelectorAll('input[data-x]').forEach(c=>c.onchange=()=>{ ex[+c.dataset.x].got=c.checked; save(); render(); });
+  $('#main').querySelectorAll('[data-rm]').forEach(b=>b.onclick=e=>{ e.preventDefault(); ex.splice(+b.dataset.rm,1); save(); render(); });
+  $('#resetGot').onclick=()=>{ db.got[wk]={}; ex.forEach(x=>x.got=false); save(); render(); };
+  const add = () => { const t=$('#addTxt').value.trim(); if(t){ addItems(splitItems(t)); render(); } };
+  $('#addBtn').onclick = add; $('#addTxt').onkeydown = e => { if(e.key==='Enter') add(); };
+  $('#mic').onclick = () => voice.active ? voice.stop() : voice.start();
+  voice.paint();
+}
+
+/* ---------- Voice assistant ---------- */
+// Uses the browser's built-in speech recognition (Chrome on Android) and speech synthesis.
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+function splitItems(t){
+  return t.replace(/\b(to|on|onto)\s+(the|my|our)?\s*(shopping\s+)?list\b/gi,'').replace(/\bplease\b/gi,'')
+    .split(/,|\band\b|&|\balso\b/i).map(s=>s.trim().replace(/^(some|a|an)\s+/i,'').replace(/[.?!]+$/,'')).filter(s=>s.length>1).map(cap);
+}
+function addItems(names){
+  const ex = extras(shopWeek()), added = [];
+  for(const n of names) if(!ex.some(x=>x.name.toLowerCase()===n.toLowerCase())){ ex.push({name:n, got:false}); added.push(n); }
+  save(); return added;
+}
+function findItem(name){
+  const q = name.toLowerCase().replace(/^(the|some)\s+/,''), wk = shopWeek();
+  const x = extras(wk).find(x=>x.name.toLowerCase().includes(q) || q.includes(x.name.toLowerCase()));
+  if(x) return {type:'extra', x};
+  const it = weekNeeds(wk).find(i=>i.g.toLowerCase().includes(q));
+  return it ? {type:'planned', g:it.g} : null;
+}
+const listText = (arr) => arr.length<2 ? arr.join('') : arr.slice(0,-1).join(', ')+' and '+arr[arr.length-1];
+function handleCommand(raw){
+  const t = raw.trim().toLowerCase().replace(/[.?!]+$/,''), wk = shopWeek();
+  if(/^(no|nope|that'?s (all|it)|done|nothing( else)?|stop|thank(s| you)|o ?(da|dá)a)\b/.test(t)) return {say:`Ó dáa. Your list is saved.`, end:true};
+  if(/(what'?s|what is|read|tell me).*(list)|what do (we|i) need/.test(t)){
+    const ex = extras(wk).filter(x=>!x.got).map(x=>x.name), pl = weekNeeds(wk).filter(i=>!(db.got[wk]||{})[i.g]).map(i=>i.g);
+    const all = ex.concat(pl);
+    if(!all.length) return {say:'The list is empty. What should I add?'};
+    return {say:`You have ${all.length} things to buy. ${listText(all.slice(0,12))}${all.length>12?', and more':''}. Anything else?`};
+  }
+  if(/^clear\b.*(list|items|everything)/.test(t)){ db.extras[wk]=[]; save(); return {say:'I cleared the items you added. Anything else?'}; }
+  let m;
+  if((m = t.match(/^(?:remove|delete|take off|take away|cross off|scratch|we (?:already )?have|i (?:already )?have|got|bought)\s+(.+)/))){
+    const done = [], missing = [];
+    for(const n of splitItems(m[1])){
+      const f = findItem(n);
+      if(!f) missing.push(n);
+      else if(f.type==='extra'){ const ex=extras(wk); ex.splice(ex.indexOf(f.x),1); done.push(f.x.name); }
+      else { (db.got[wk] ||= {})[f.g]=true; done.push(f.g); }
+    }
+    save();
+    return {say: (done.length?`Okay, ${listText(done)} crossed off. `:'') + (missing.length?`I couldn't find ${listText(missing)} on the list. `:'') + 'Anything else?'};
+  }
+  const body = t.replace(/^(?:please\s+)?(?:add|put|get|buy|we need|i need|we'?re out of|we are out of|we ran out of|out of)\s+/,'');
+  const added = addItems(splitItems(body));
+  return {say: added.length ? `Ó dáa! Added ${listText(added)}. Anything else?` : `That's already on the list. Anything else?`};
+}
+const voice = {
+  active:false, rec:null, said:'', reply:'',
+  paint(){
+    const mic = $('#mic'); if(!mic) return;
+    mic.classList.toggle('live', this.active); mic.textContent = this.active ? '■' : '🎤'; mic.disabled = !SR;
+    if(this.reply) $('#vReply').textContent = this.reply;
+    $('#vSaid').textContent = this.said ? `You said: “${this.said}”` : '';
+  },
+  speak(text, then){
+    this.reply = text; this.paint();
+    if(!window.speechSynthesis){ then && then(); return; }
+    speechSynthesis.cancel();
+    // English voices can't read tone marks, so spell the Yoruba phrases out phonetically
+    const u = new SpeechSynthesisUtterance(text.replace(/Ó dáa/g,'Oh dah').replace(/Ẹ nlẹ́/g,'Eh nleh'));
+    u.lang = 'en-US'; u.rate = 1;
+    u.onend = () => then && then();
+    speechSynthesis.speak(u);
+  },
+  start(){
+    if(!SR) return;
+    this.active = true; this.said = ''; this.paint();
+    this.speak(`Ẹ nlẹ́, ${db.names.wife}! What should I add to the shopping list?`, () => this.listen());
+  },
+  listen(){
+    if(!this.active) return;
+    const r = this.rec = new SR();
+    r.lang = 'en-NG'; r.interimResults = true; r.maxAlternatives = 1;
+    let final = '';
+    r.onresult = e => { const res = e.results[e.results.length-1]; this.said = res[0].transcript; if(res.isFinal) final = this.said; this.paint(); };
+    r.onerror = e => { if(e.error==='not-allowed'){ this.active=false; this.speak('I need permission to use the microphone.'); } };
+    r.onend = () => {
+      if(!this.active) return;
+      if(!final){ this.stop('I didn\'t hear anything, so I stopped listening. Tap the mic to try again.'); return; }
+      const out = handleCommand(final);
+      if(view==='shop') render();
+      if(out.end){ this.active=false; this.speak(out.say); this.paint(); }
+      else this.speak(out.say, () => this.listen());
+    };
+    r.start();
+  },
+  stop(msg){
+    this.active = false; try{ this.rec && this.rec.abort(); }catch(e){}
+    if(msg) this.speak(msg); else { speechSynthesis && speechSynthesis.cancel(); this.paint(); }
+  },
+};
 
 let mealFilter = 'all';
 function renderMeals(){
-  const F = {all:'All', d:'💚 Sugar-friendly', k:'Kids love', breakfast:'Breakfast', lunchbox:'Lunchbox', lunch:'Lunch pack', dinner:'Dinner', late:'Late plate'};
-  const list = allMeals().filter(m => mealFilter==='all' || (mealFilter==='d'?m.d : mealFilter==='k'?m.k : m.cats.includes(mealFilter)));
+  const F = {all:'All', yor:'Yorùbá', d:'💚 Sugar-friendly', k:'Kids love', breakfast:'Breakfast', lunchbox:'Lunchbox', lunch:'Lunch pack', dinner:'Dinner', late:'Late plate'};
+  const list = allMeals().filter(m => mealFilter==='all' || (mealFilter==='d'?m.d : mealFilter==='k'?m.k : mealFilter==='yor'?YORUBA_IDS.has(m.id) : m.cats.includes(mealFilter)));
   $('#main').innerHTML = `<h2>Meal library</h2>
     <div class="chips" style="margin-bottom:14px">${Object.entries(F).map(([k,v])=>`<button class="chip ${k===mealFilter?'on':''}" data-f="${k}">${v}</button>`).join('')}</div>
-    <div class="grid">${list.map(m=>`<div class="card"><div class="row"><span style="font-size:34px">${m.em}</span><h3 style="margin:0">${esc(m.name)}</h3></div>
+    <div class="grid">${list.map(m=>`<div class="card"><div class="row"><span style="font-size:34px">${m.em}</span><h3 style="margin:0">${esc(m.name)}${yoName(m)?`<span class="yo">${esc(yoName(m))}</span>`:''}</h3></div>
       <div style="margin:8px 0">${m.d?'<span class="pill p-d">💚 sugar-friendly</span>':''}${m.k?'<span class="pill p-k">kids</span>':''}${m.p?'<span class="pill p-p">packs</span>':''}</div>
       ${m.tip?`<div class="tip">💚 ${esc(m.tip)}</div>`:''}
       ${m.ing.length?`<div class="muted" style="font-size:15px;margin-top:8px">${esc(m.ing.join(', '))}</div>`:''}
+      <div class="row" style="margin-top:8px;font-size:15px"><span>≈ <b>${money(mealCost(m, db.home.kids+2))}</b> for the family</span>
+        ${recipeOf(m)?`<a class="rlink" href="${recipeOf(m)}" target="_blank" rel="noopener">📖 Recipe</a>`:''}</div>
       ${m.custom?`<button class="btn warn" style="margin-top:10px;padding:8px 14px" data-del="${m.id}">Remove</button>`:''}</div>`).join('')}</div>
     <h2 style="margin-top:30px">Add a family meal</h2>
     <div class="card form">
@@ -438,23 +619,61 @@ function renderSettings(){
       <label>What the app calls you<input type="text" id="sMe" value="${esc(db.names.me)}"></label>
       <label>What the app calls your wife<input type="text" id="sWife" value="${esc(db.names.wife)}"></label>
       <label>What the app calls the children<input type="text" id="sKids" value="${esc(db.names.kids)}"></label>
+      <label>Number of children (for portions & costs)<input type="text" inputmode="numeric" id="sKidN" value="${db.home.kids}"></label>
+      <label>ZIP code (to find African grocers near you)<input type="text" inputmode="numeric" id="sZip" value="${esc(db.home.zip)}" placeholder="e.g. 77072"></label>
       <div><button class="btn" id="sSave">Save</button></div>
     </div>
+    <h2 style="margin-top:28px">App updates</h2>
+    <div class="card row"><span>Version <b>${esc(appVersion||'—')}</b></span>
+      <button class="btn ghost" id="chkUpd">Check for updates</button>
+      <span class="muted" id="updMsg">The fridge also checks by itself every 30 minutes.</span></div>
     <h2 style="margin-top:28px">Backup</h2>
     <div class="card row"><button class="btn ghost" id="exp">Copy backup</button>
       <button class="btn ghost" id="imp">Restore from backup</button>
       <span class="muted">Plans are saved on this fridge only.</span></div>`;
-  $('#sSave').onclick=()=>{ db.names={me:$('#sMe').value.trim()||'Daddy', wife:$('#sWife').value.trim()||'Mummy', kids:$('#sKids').value.trim()||'Kids'}; save(); view='today'; render(); };
+  $('#sSave').onclick=()=>{ db.names={me:$('#sMe').value.trim()||'Daddy', wife:$('#sWife').value.trim()||'Mummy', kids:$('#sKids').value.trim()||'Kids'};
+    db.home={kids:Math.max(0, parseInt($('#sKidN').value)||0), zip:$('#sZip').value.trim().slice(0,10)}; save(); view='today'; render(); };
+  $('#chkUpd').onclick=async()=>{ $('#updMsg').textContent='Checking…'; $('#updMsg').textContent = await checkForUpdates(); };
   $('#exp').onclick=async()=>{ const t=JSON.stringify(db); try{ await navigator.clipboard.writeText(t); alert('Backup copied.'); }catch(e){ prompt('Copy this backup text:', t); } };
   $('#imp').onclick=()=>{ const t=prompt('Paste backup text:'); if(!t) return;
     try{ db=Object.assign(db, JSON.parse(t)); save(); render(); alert('Restored.'); }catch(e){ alert('That backup text is not valid.'); } };
 }
 
-$('#nav').onclick = e => { const v = e.target.closest('button')?.dataset.v; if(v){ view=v; if(v!=='week') weekOffset=0; render(); } };
+$('#nav').onclick = e => { const v = e.target.closest('button')?.dataset.v; if(v){ view=v; if(v==='today') weekOffset=0; render(); } };
 render();
 // Refresh "today" after midnight on an always-on screen
 setInterval(()=>{ if(view==='today') render(); }, 10*60*1000);
-if('serviceWorker' in navigator && location.protocol!=='file:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+/* ---------- Updates ---------- */
+let swReg = null, appVersion = '', updating = false;
+function showUpdate(worker){
+  const b = $('#updateBar'); b.classList.add('on');
+  $('#updateBtn').onclick = () => { updating = true; $('#updateBtn').textContent = 'Updating…'; worker.postMessage('skipWaiting'); };
+}
+function watchForUpdates(reg){
+  swReg = reg;
+  if(reg.waiting && navigator.serviceWorker.controller) showUpdate(reg.waiting);
+  reg.addEventListener('updatefound', () => {
+    const w = reg.installing;
+    w.addEventListener('statechange', () => {
+      if(w.state === 'installed' && navigator.serviceWorker.controller) showUpdate(w);
+    });
+  });
+  setInterval(() => reg.update().catch(()=>{}), 30*60*1000); // fridge is always on: check every 30 min
+}
+async function checkForUpdates(){
+  if(!swReg) return 'Updates work once the app is installed from its web address.';
+  await swReg.update().catch(()=>{});
+  return swReg.waiting || swReg.installing ? 'An update is downloading — look for the green bar.' : 'You have the latest version.';
+}
+if('serviceWorker' in navigator && location.protocol!=='file:'){
+  // Reload only when the family tapped "Update now" (not when the app first installs itself)
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if(updating){ updating = false; location.reload(); } });
+  navigator.serviceWorker.addEventListener('message', e => { if(e.data?.version){ appVersion = e.data.version; if(view==='settings') render(); } });
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    watchForUpdates(reg);
+    navigator.serviceWorker.ready.then(r => r.active?.postMessage('version'));
+  }).catch(()=>{});
+}
 </script>
 </body>
 </html>

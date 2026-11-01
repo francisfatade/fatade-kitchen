@@ -1,10 +1,12 @@
-// Offline cache so the fridge keeps working when Wi-Fi drops
-const CACHE = 'fatade-kitchen-v1';
-const FILES = ['./', './index.html', './manifest.json', './icon.svg'];
+// Offline cache + update flow.
+// release.ps1 bumps VERSION; the changed file makes the fridge see a new
+// worker, which waits until someone taps "Update" in the app.
+const VERSION = '1.2.0';
+const CACHE = 'fatade-kitchen-' + VERSION;
+const FILES = ['./', './index.html', './prices.js', './recipes.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
-  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))));
 });
 
 self.addEventListener('activate', e => {
@@ -12,12 +14,14 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Network first (so updates arrive), cache as fallback
+self.addEventListener('message', e => {
+  if (e.data === 'skipWaiting') self.skipWaiting();
+  if (e.data === 'version') e.source.postMessage({ version: VERSION });
+});
+
+// App files come from this version's cache (works offline, changes only on Update).
+// Anything else (recipe pages, store sites) goes straight to the network.
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    fetch(e.request)
-      .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return res; })
-      .catch(() => caches.match(e.request))
-  );
+  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
+  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => hit || fetch(e.request)));
 });
