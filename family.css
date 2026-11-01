@@ -9,7 +9,7 @@ body.has-photo #backdrop{display:block}
 
 /* Today banner */
 .hero{position:relative;height:clamp(220px,34vh,420px);border-radius:24px;overflow:hidden;margin-bottom:20px;
-  background:center 28%/cover no-repeat;box-shadow:0 8px 30px rgba(0,0,0,.18)}
+  background:center 40%/cover no-repeat;box-shadow:0 8px 30px rgba(0,0,0,.18)}
 .hero.nophoto{background:linear-gradient(135deg,#7a1e2c,#b23a3a 45%,#1f6f4a)}
 .hero-txt{position:absolute;left:0;right:0;bottom:0;padding:22px 26px;color:#fff;
   background:linear-gradient(transparent,rgba(0,0,0,.65))}
