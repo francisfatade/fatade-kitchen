@@ -64,7 +64,7 @@ function heroHtml(){
 const Saver = {
   last: Date.now(), on: false, i: 0, timer: null,
   poke(){ Saver.last = Date.now(); if(Saver.on) Saver.hide(); },
-  busy(){ return $('#scrim').classList.contains('on') || (typeof voice!=='undefined' && voice.active) || document.activeElement?.tagName==='INPUT'; },
+  busy(){ return $('#scrim').classList.contains('on') || (typeof Planner !== 'undefined' && Planner.open) || (typeof voice!=='undefined' && voice.active) || document.activeElement?.tagName==='INPUT'; },
   check(){
     const m = look().saverMin;
     if(!Saver.on && m && Date.now()-Saver.last > m*60000 && !Saver.busy()) Saver.show();
@@ -169,7 +169,7 @@ function familyInit(){
   ['pointerdown','keydown','touchstart'].forEach(ev => addEventListener(ev, Saver.poke, {passive:true, capture:true}));
   setInterval(Saver.check, 15000);
   // Android back button (installed app): close pop-ups, then go Home
-  window.__back = () => { if(Saver.on) Saver.hide(); else if(Alarm.active) return; else if($('#scrim').classList.contains('on')) closePicker(); else { view='today'; render(); } };
+  window.__back = () => { if(Saver.on) Saver.hide(); else if(Alarm.active) return; else if(Planner.open) Planner.close(); else if($('#scrim').classList.contains('on')) closePicker(); else { view='today'; render(); } };
   matchMedia('(orientation: portrait)').addEventListener('change', () => { if(view==='week') render(); });
   Photos.load().then(() => { applyBackdrop(); if(view==='today' || view==='settings') render(); });
   checkAppUpdate(); setInterval(checkAppUpdate, 30*60*1000);

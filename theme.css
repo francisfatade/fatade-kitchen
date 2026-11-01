@@ -306,6 +306,44 @@ label input{margin-top:6px;color:var(--ink)}
   .pv-photo{height:min(52vh,560px)}
 }
 
+/* Swipe planner (planner.js) */
+.plan-cta{display:flex;align-items:center;gap:14px;width:100%;margin:0 0 18px;padding:14px 18px;border:0;border-radius:var(--radius);
+  background:var(--card);box-shadow:var(--shadow);text-align:left;color:var(--ink)}
+.plan-cta-ic{font-size:28px;width:52px;height:52px;border-radius:16px;background:var(--green-soft);display:grid;place-items:center}
+.plan-cta b{display:block;font-size:19px} .plan-cta small{color:var(--muted);font-size:14px}
+.plan-cta-go{margin-left:auto;font-size:34px;color:var(--green);font-weight:300}
+#planner{position:fixed;inset:0;z-index:45;display:none;flex-direction:column;background:var(--bg);padding:calc(14px + env(safe-area-inset-top)) 22px 22px;overflow:hidden}
+#planner.on{display:flex}
+.pl-top{display:flex;align-items:center;gap:12px}
+.pl-where{flex:1;text-align:center}
+.pl-day{font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.pl-slot{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.pl-progress{height:6px;border-radius:999px;background:var(--fill);margin:12px 0 10px;overflow:hidden}
+.pl-progress span{display:block;height:100%;background:var(--green);border-radius:999px;transition:width .3s}
+.pl-note{font-size:15px;font-weight:600;background:var(--green-soft);border-radius:12px;padding:9px 12px;margin-bottom:8px;text-align:center}
+.pl-cur{font-size:14px;color:var(--muted);text-align:center;margin-bottom:6px}
+.pl-stack{position:relative;flex:1;min-height:0;margin:6px 0 14px}
+.pl-card{position:absolute;inset:0;border-radius:30px;overflow:hidden;background:var(--card);display:grid;place-items:center;
+  box-shadow:0 18px 50px rgba(0,0,0,.22);touch-action:pan-y;user-select:none;cursor:grab}
+.pl-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+.pl-card.behind{transform:scale(.94) translateY(14px);opacity:.55;box-shadow:none}
+.pl-card.in-right,.pl-card.in-left{animation:plin .3s ease}
+@keyframes plin{from{transform:scale(.94) translateY(14px);opacity:.6}}
+.pl-cap{position:absolute;left:0;right:0;bottom:0;padding:90px 24px 22px;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.8))}
+.pl-cap .food-tags{margin-top:10px}
+.pl-cap .tag{background:rgba(255,255,255,.88)}
+.pl-tip{margin-top:10px;font-size:15px;background:rgba(255,255,255,.16);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-radius:12px;padding:8px 12px}
+.pl-stamp{position:absolute;top:28px;font-size:34px;font-weight:900;letter-spacing:.06em;padding:6px 16px;border:4px solid;border-radius:14px;opacity:0;transition:opacity .1s}
+.pl-stamp.yes{left:24px;color:#2FB457;transform:rotate(-12deg)} .pl-stamp.no{right:24px;color:#E5383B;transform:rotate(12deg)}
+.pl-card.show-yes .pl-stamp.yes,.pl-card.show-no .pl-stamp.no{opacity:1}
+.pl-btns{display:flex;justify-content:center;align-items:center;gap:28px}
+.pl-b{border:0;border-radius:50%;width:78px;height:78px;font-size:34px;font-weight:700;background:var(--card);box-shadow:0 8px 24px rgba(0,0,0,.14)}
+.pl-b.no{color:#E5383B} .pl-b.yes{color:#fff;background:var(--ok);width:92px;height:92px;font-size:40px}
+.pl-b.skip{width:auto;height:52px;border-radius:999px;padding:0 22px;font-size:16px;color:var(--muted)}
+.pl-hint{text-align:center;font-size:14px;color:var(--muted);margin-top:12px}
+.pl-done{margin:auto;text-align:center;max-width:520px}
+.pl-done-ic{font-size:72px} .pl-done h2{font-size:32px;margin:10px 0 4px} .pl-done p{font-size:17px;color:var(--muted)}
+
 /* Celebration */
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:120;overflow:hidden}
 .confetti i{position:absolute;top:-40px;left:var(--x);font-size:30px;font-style:normal;animation:fall var(--d) ease-in forwards}

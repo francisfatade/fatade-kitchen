@@ -136,6 +136,7 @@ nav small{font-weight:500;font-style:italic;opacity:.75;margin-left:2px}
 <script src="hungry.js"></script>
 <script src="votes.js"></script>
 <script src="updater.js"></script>
+<script src="planner.js"></script>
 <script>
 /* ---------- Meal library ----------
    cats: breakfast | lunchbox | lunch | dinner | late
@@ -372,6 +373,7 @@ function renderToday(){
   $('#main').innerHTML = `${heroHtml()}${glucoseCardHtml()}${hungryButtonHtml()}
     ${lateM ? `<div class="banner"><span class="big">🌙</span><div><h3>Late plate for ${esc(db.names.me)}</h3>
       ${lateM.em} <b>${esc(lateM.name)}</b> — set it aside before dinner is served.</div></div>` : ''}
+    <button class="plan-cta" id="planToday"><span class="plan-cta-ic">👆</span><span><b>Plan the week</b><small>Swipe through meals · ${esc(db.names.me)}'s are sugar-friendly</small></span><span class="plan-cta-go">›</span></button>
     ${voteTodayHtml()}
     <div class="row"><h2>${DAYS_LONG[d]}'s meals <span class="yo-h">${DAYS_YO[d]} · Oúnjẹ òní</span></h2><span class="spacer"></span>
       ${empty ? `<button class="btn" id="fillToday">✨ Suggest ${empty} meal${empty>1?'s':''}</button>` : ''}</div>
@@ -387,6 +389,7 @@ function renderToday(){
   const h = $('#heroAdd'); if(h) h.onclick = ()=>{ view='settings'; render(); };
   $('#hungryBtn').onclick = () => hungryNow('button');
   bindVoteToday();
+  $('#planToday').onclick = () => { weekOffset = todayIdx() === 6 ? 1 : 0; Planner.start(weekKey()); };   // Sunday: plan next week
 }
 
 function renderWeek(){
@@ -396,7 +399,8 @@ function renderWeek(){
     <h2 style="margin:0">Week of ${dates[0].toLocaleDateString(undefined,{day:'numeric',month:'short'})}</h2>
     <button class="btn ghost" id="nextW">▶</button>
     <span class="spacer"></span>
-    <button class="btn" id="fillWeek">✨ Fill empty slots</button>
+    <button class="btn" id="planSwipe">👆 Plan the week</button>
+    <button class="btn ghost" id="fillWeek">✨ Fill empty slots</button>
     <button class="btn warn" id="clearWeek">Clear week</button></div>
   `;
   if(matchMedia('(orientation: portrait)').matches){
@@ -424,6 +428,7 @@ function renderWeek(){
   $('#prevW').onclick=()=>{weekOffset--; render();};
   $('#nextW').onclick=()=>{weekOffset++; render();};
   $('#fillWeek').onclick=()=>{ autofill(wk,[0,1,2,3,4,5,6]); render(); };
+  $('#planSwipe').onclick=()=>Planner.start(wk);
   $('#clearWeek').onclick=async()=>{
     const locked = Object.values(db.votes?.[wk] || {}).some(d => Object.values(d).some(s => s.lock));
     if(await parentCheck('Clear the whole week')){ delete db.plans[wk]; if(db.votes) delete db.votes[wk]; save(); toast('🗑️ The week is cleared.'); }
