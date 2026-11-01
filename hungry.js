@@ -41,6 +41,19 @@ const CallRec = {
     }
   },
   stop(){ if(this.rec && this.rec.state !== 'inactive') this.rec.stop(); },
+  // A song recorded elsewhere (e.g. Recording.m4a copied to the tablet's Download folder)
+  async useFile(file){
+    if(!file) return;
+    if(!/^audio\//.test(file.type) && !/\.(m4a|mp3|aac|wav|ogg|opus|webm|amr|3gp)$/i.test(file.name)){ toast('Please choose a sound file.'); return; }
+    if(file.size > 15 * 1024 * 1024){ toast('That file is too big — keep it under 15 MB (about 10 minutes).'); return; }
+    const playable = await new Promise(res => { const a = new Audio(URL.createObjectURL(file));
+      a.onloadedmetadata = () => res(a.duration); a.onerror = () => res(0); setTimeout(() => res(-1), 5000); });
+    if(playable === 0){ toast('The tablet can\'t play that file type — try an .m4a or .mp3.'); return; }
+    await this.tx('readwrite', s => s.put(file, 'dinnerCall')); await this.load();
+    hungryCfg().useRec = true; save();
+    toast(`🎵 “${file.name}” is now your dinner call${playable > 0 ? ` (${Math.round(playable)} s)` : ''}.`);
+    if(view === 'settings') render();
+  },
   play(){ return new Promise(res => { if(!this.url) return res(); const a = new Audio(this.url); a.onended = a.onerror = () => res(); a.play().catch(() => res()); }); },
   async remove(){ await this.tx('readwrite', s => s.delete('dinnerCall')); await this.load(); },
 };
@@ -130,9 +143,10 @@ function hungrySettingsHtml(){
       <div class="lrow"><span class="lic">⏰</span><span style="flex:1"><b>Every day at</b><small>Plays once a day so ${esc(db.names.wife)} can prep before ${esc(db.names.me)} gets home.</small></span>
         <input type="time" id="hgTime" value="${c.time}" class="timein"></div>
       <div class="lrow rec-row"><span class="lic">🎙️</span><span style="flex:1"><b>Your own dinner call</b>
-          <small>${CallRec.rec ? 'Recording… sing or speak now!' : CallRec.has ? 'Your recording plays first, then the tablet reads tonight\'s menu.' : 'Sing a song or say it your way — up to 1 minute. It stays on this tablet.'}</small></span>
+          <small>${CallRec.rec ? 'Recording… sing or speak now!' : CallRec.has ? 'Your recording plays first, then the tablet reads tonight\'s menu.' : 'Record here, or choose a song you recorded on your phone or computer (copy it to the tablet first). It stays on this tablet.'}</small></span>
         ${CallRec.rec ? `<span class="rec-dot"></span><span id="recTime" class="rec-time">0:00 / 1:00</span><button class="btn warn" id="recStop">■ Stop</button>`
           : `${CallRec.has ? `<button class="btn tinted" id="recPlay">▶ Play</button>` : ''}
+             <label class="btn tinted filebtn">📁 Use a sound file<input type="file" id="recFile" accept="audio/*" hidden></label>
              <button class="btn ${CallRec.has ? 'ghost' : ''}" id="recStart">● ${CallRec.has ? 'Record again' : 'Record'}</button>
              ${CallRec.has ? `<button class="iconbtn" id="recDel" title="Delete recording">✕</button>` : ''}`}</div>
       ${CallRec.has ? `<div class="lrow"><div class="chips"><button class="chip ${c.useRec?'on':''}" id="hgUseRec">🎵 Use my recording</button></div></div>` : ''}
@@ -154,6 +168,10 @@ function bindHungrySettings(){
   on('recStart', () => CallRec.start());
   on('recStop', () => CallRec.stop());
   on('recPlay', () => CallRec.play());
+  const rf = $('#recFile'); if(rf) rf.onchange = e => {
+    if(NATIVE && appVersionCode() < 5){ toast('Choosing sound files needs the new tablet app — tap Install in the green bar.'); }
+    CallRec.useFile(e.target.files[0]);
+  };
   on('recDel', async () => { if(confirm('Delete your recorded dinner call?')){ await CallRec.remove(); render(); } });
   on('hgUseRec', () => { c.useRec = !c.useRec; save(); render(); });
 }
