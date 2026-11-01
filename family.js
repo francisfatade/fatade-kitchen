@@ -56,7 +56,7 @@ function heroHtml(){
   const url = Photos.bgUrl();
   return `<div class="hero ${url?'':'nophoto'}" ${url?`style="background-image:url('${url}')"`:''}>
     <div class="hero-txt"><div class="hero-title">The Fatade Family</div>
-      <div class="hero-sub">Ìdílé Fatade · ${greeting()}!</div>
+      <div class="hero-sub">${esc(profileGreeting())}!</div>
       ${url ? '' : `<button class="btn" id="heroAdd">📷 Add family photos</button>`}</div></div>`;
 }
 
@@ -71,6 +71,8 @@ const Saver = {
   },
   show(){
     Saver.on = true; Saver.i = 0;
+    if(view === 'settings'){ Lock.close(); view = 'today'; render(); }   // never leave Settings unlocked
+
     const el = $('#saver'); el.classList.add('on');
     Saver.paint(); Saver.slide();
     clearInterval(Saver.timer); Saver.timer = setInterval(() => { Saver.paint(); Saver.slide(); }, 12000);

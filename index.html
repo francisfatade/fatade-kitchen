@@ -102,20 +102,24 @@ nav small{font-weight:500;font-style:italic;opacity:.75;margin-left:2px}
 }
 </style>
 <link rel="stylesheet" href="family.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@200;400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="theme.css">
 </head>
 <body>
 <div id="backdrop"></div>
 <header>
   <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="34" r="22" fill="#fff" opacity=".18"/><path d="M14 34h36a18 18 0 0 1-36 0z" fill="#fff"/><path d="M24 14c0 6 4 6 4 12M32 12c0 6 4 6 4 12M40 14c0 6 4 6 4 12" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
-  <h1>Fatade Kitchen</h1>
-  <div class="date" id="hdrDate"></div>
+  <div class="ttl"><div class="eyebrow" id="hdrDate"></div><h1 id="hdrTitle">Today</h1></div>
+  <button class="avatar" id="profileBtn" onclick="openProfiles()"></button>
 </header>
 <nav id="nav">
-  <button data-v="today" class="on"><span class="ni">🏠</span>Today <small>Òní</small></button>
-  <button data-v="week"><span class="ni">📅</span>This week <small>Ọ̀sẹ̀ yìí</small></button>
-  <button data-v="shop"><span class="ni">🛒</span>Shopping <small>Ọjà</small></button>
-  <button data-v="meals"><span class="ni">🍲</span>Meals <small>Oúnjẹ</small></button>
-  <button data-v="settings"><span class="ni">⚙️</span>Settings <small>Ètò</small></button>
+  <button data-v="today" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.2 12 3.5l8.5 6.7V19a1.5 1.5 0 0 1-1.5 1.5h-4.5v-6h-5v6H5A1.5 1.5 0 0 1 3.5 19z"/></svg>Today</button>
+  <button data-v="week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Week</button>
+  <button data-v="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2.4l2.3 11.2a1.5 1.5 0 0 0 1.5 1.2h8.4a1.5 1.5 0 0 0 1.5-1.1L21 8H6.2"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17.5" cy="20" r="1.3"/></svg>Shopping</button>
+  <button data-v="meals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12h17a8.5 8.5 0 0 1-17 0zM8 8.5c0-1.5 1-1.5 1-3M12 8.5c0-1.5 1-1.5 1-3M16 8.5c0-1.5 1-1.5 1-3"/></svg>Meals</button>
+  <button data-v="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>Settings</button>
 </nav>
 <div class="updatebar" id="appBar"><span id="appBarMsg"></span><button class="btn" id="appBarBtn">Install</button></div>
 <div class="updatebar" id="updateBar"><span>✨ A new version of Fatade Kitchen is ready.</span><button class="btn" id="updateBtn">Update now</button></div>
@@ -127,6 +131,7 @@ nav small{font-weight:500;font-style:italic;opacity:.75;margin-left:2px}
 <script src="recipes.js"></script>
 <script src="family.js"></script>
 <script src="glucose.js"></script>
+<script src="profiles.js"></script>
 <script>
 /* ---------- Meal library ----------
    cats: breakfast | lunchbox | lunch | dinner | late
@@ -317,7 +322,10 @@ function fmtDate(d){ return d.toLocaleDateString(undefined,{weekday:'long', day:
 let view = 'today';
 function render(){
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on', b.dataset.v===view));
-  $('#hdrDate').innerHTML = `<b>${greeting()}!</b><br>${fmtDate(new Date())}`;
+  const T = {today:['Today','Òní'], week:['This Week','Ọ̀sẹ̀ yìí'], shop:['Shopping','Ọjà'], meals:['Meals','Oúnjẹ'], settings:['Settings','Ètò']}[view];
+  $('#hdrDate').textContent = `${fmtDate(new Date())} · ${view==='today' ? profileGreeting() : DAYS_YO[todayIdx()]}`;
+  $('#hdrTitle').innerHTML = `${T[0]}<small>${T[1]}</small>`;
+  if(view==='settings' && Lock.needed()) return renderLock();
   ({today:renderToday, week:renderWeek, shop:renderShop, meals:renderMeals, settings:renderSettings})[view]();
 }
 
@@ -711,6 +719,8 @@ function renderSettings(){
       <label>Stores you shop at (separate with commas)<input type="text" id="sStores" value="${esc(db.home.stores.join(', '))}"></label>
       <div><button class="btn" id="sSave">Save</button></div>
     </div>
+    ${lockSettingsHtml()}
+    ${profileSettingsHtml()}
     ${glucoseSettingsHtml()}
     ${displaySettingsHtml()}
     <h2 style="margin-top:28px">Send list to phone</h2>
@@ -737,6 +747,8 @@ function renderSettings(){
   $('#chkUpd').onclick=async()=>{ $('#updMsg').textContent='Checking…'; $('#updMsg').textContent = await checkForUpdates(); };
   bindDisplaySettings();
   bindGlucoseSettings();
+  bindLockSettings();
+  bindProfileSettings();
   $('#testSend').onclick=async()=>{
     try{ const r = await fetch('https://ntfy.sh/', {method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({topic: ntfyTopic(), title:'Fatade Kitchen', message:'✅ It works! Shopping lists from the tablet will arrive here.', tags:['white_check_mark']})});
@@ -746,7 +758,10 @@ function renderSettings(){
     try{ db=Object.assign(db, JSON.parse(t)); save(); render(); alert('Restored.'); }catch(e){ alert('That backup text is not valid.'); } };
 }
 
-$('#nav').onclick = e => { const v = e.target.closest('button')?.dataset.v; if(v){ view=v; if(v==='today') weekOffset=0; render(); } };
+$('#nav').onclick = e => { const v = e.target.closest('button')?.dataset.v;
+  if(v){ if(view==='settings' && v!=='settings') Lock.close(); view=v; if(v==='today') weekOffset=0; render(); scrollTo(0,0); } };
+applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 render();
 familyInit();
 glucoseInit();
