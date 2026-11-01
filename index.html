@@ -481,6 +481,7 @@ function renderShop(){
         <div class="row" style="margin-top:10px"><input type="text" id="addTxt" placeholder="Or type an item and press Add" style="flex:1"><button class="btn" id="addBtn">Add</button></div></div>
     </div>
     <div class="row"><h2>Shopping · week of ${dates[0].toLocaleDateString(undefined,{day:'numeric',month:'short'})}</h2><span class="spacer"></span>
+      <button class="btn" id="sendList">📲 Send to phone</button>
       <button class="btn ghost" id="resetGot">Untick all</button></div>
     ${items.length ? `<div class="banner"><span class="big">💵</span><div><h3>About ${money(total)} for this week's planned meals</h3>
       ${money(left)} still to buy · estimates from ${PRICES_UPDATED} prices, before tax & shipping</div></div>` : ''}
@@ -503,6 +504,7 @@ function renderShop(){
   $('#main').querySelectorAll('input[data-x]').forEach(c=>c.onchange=()=>{ ex[+c.dataset.x].got=c.checked; save(); render(); });
   $('#main').querySelectorAll('[data-rm]').forEach(b=>b.onclick=e=>{ e.preventDefault(); ex.splice(+b.dataset.rm,1); save(); render(); });
   $('#resetGot').onclick=()=>{ db.got[wk]={}; ex.forEach(x=>x.got=false); save(); render(); };
+  $('#sendList').onclick=async()=>{ const b=$('#sendList'); b.disabled=true; b.textContent='Sending…'; toast(await sendList()); b.disabled=false; b.textContent='📲 Send to phone'; };
   const add = () => { const t=$('#addTxt').value.trim(); if(t){ addItems(splitItems(t)); render(); } };
   $('#addBtn').onclick = add; $('#addTxt').onkeydown = e => { if(e.key==='Enter') add(); };
   $('#mic').onclick = () => voice.active ? voice.stop() : voice.start();
@@ -534,6 +536,50 @@ function findItem(name){
   return it ? {type:'planned', g:it.g} : null;
 }
 const listText = (arr) => arr.length<2 ? arr.join('') : arr.slice(0,-1).join(', ')+' and '+arr[arr.length-1];
+
+/* ---------- Send list to phone ----------
+   Uses ntfy.sh (free push notifications): the tablet posts to a private random
+   topic; the phone's ntfy app subscribes to it. The topic name is the password,
+   so it lives only in this tablet's saved settings. */
+function ntfyTopic(){
+  if(!db.home.ntfy){
+    const a = 'abcdefghijkmnpqrstuvwxyz23456789', r = crypto.getRandomValues(new Uint8Array(14));
+    db.home.ntfy = 'fatade-' + [...r].map(b=>a[b % a.length]).join(''); save();
+  }
+  return db.home.ntfy;
+}
+function shoppingMessage(){
+  const wk = shopWeek(), got = db.got[wk]||{}, items = weekNeeds(wk).filter(i=>!got[i.g]);
+  const ex = extras(wk).filter(x=>!x.got).map(x=>x.name);
+  const line = i => `☐ ${i.g}${i.p?` — ${i.packs} × ${i.p.pack} (~${money(i.cost)})`:''}`;
+  const sm = items.filter(i=>!i.p || i.p.store!=='african'), af = items.filter(i=>i.p && i.p.store==='african');
+  const parts = [];
+  if(ex.length) parts.push(`ADDED BY ${db.names.wife.toUpperCase()}\n` + ex.map(n=>'☐ '+n).join('\n'));
+  if(sm.length) parts.push(`SUPERMARKET (${db.home.stores.join(' / ')})\n` + sm.map(line).join('\n'));
+  if(af.length) parts.push(`AFRICAN GROCER\n` + af.map(line).join('\n'));
+  if(!parts.length) return '';
+  const total = items.reduce((t,i)=>t+i.cost,0);
+  let msg = parts.join('\n\n') + (total ? `\n\nEstimated total ~${money(total)}` : '');
+  if(new Blob([msg]).size > 3900) msg = msg.slice(0, 3800) + '\n… (open the tablet for the rest)';
+  return msg;
+}
+async function sendList(){
+  const msg = shoppingMessage();
+  if(!msg) return 'The shopping list is empty, so there was nothing to send.';
+  try{
+    const r = await fetch('https://ntfy.sh/', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({topic: ntfyTopic(), title: '🛒 Fatade shopping list · Ọjà', message: msg, tags:['shopping_cart'], priority: 4})});
+    if(!r.ok) throw new Error(r.status);
+    return 'Ó dáa! The shopping list is on its way to your phone.';
+  }catch(e){
+    return navigator.onLine === false ? 'The tablet is offline. Connect to Wi-Fi and say send again.'
+      : 'Sorry, I couldn\'t send the list just now. Please try again in a minute.';
+  }
+}
+function toast(text){
+  let t = $('#toast'); if(!t){ t = document.createElement('div'); t.id = 'toast'; document.body.appendChild(t); }
+  t.textContent = text; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('on'), 5000);
+}
 function handleCommand(raw){
   const t = raw.trim().toLowerCase().replace(/[.?!]+$/,''), wk = shopWeek();
   if(/^(no|nope|that'?s (all|it)|done|nothing( else)?|stop|thank(s| you)|o ?(da|dá)a)\b/.test(t)) return {say:`Ó dáa. Your list is saved.`, end:true};
@@ -543,6 +589,7 @@ function handleCommand(raw){
     if(!all.length) return {say:'The list is empty. What should I add?'};
     return {say:`You have ${all.length} things to buy. ${listText(all.slice(0,12))}${all.length>12?', and more':''}. Anything else?`};
   }
+  if(/^(please\s+)?send\b|^(text|share)\b.*\blist\b/.test(t)) return {say:'Sending the shopping list to your phone.', end:true, action:'send'};
   if(/^clear\b.*(list|items|everything)/.test(t)){ db.extras[wk]=[]; save(); return {say:'I cleared the items you added. Anything else?'}; }
   let m;
   if((m = t.match(/^(?:remove|delete|take off|take away|cross off|scratch|we (?:already )?have|i (?:already )?have|got|bought)\s+(.+)/))){
@@ -588,6 +635,7 @@ const voice = {
     if(!final){ this.stop('I didn\'t hear anything, so I stopped listening. Tap the mic to try again.'); return; }
     const out = handleCommand(final);
     if(view==='shop') render();
+    if(out.action==='send'){ this.active=false; this.paint(); this.reply=out.say; this.paint(); sendList().then(m=>{ this.speak(m); toast(m); }); return; }
     if(out.end){ this.active=false; this.speak(out.say); this.paint(); }
     else this.speak(out.say, () => this.listen());
   },
@@ -662,6 +710,16 @@ function renderSettings(){
       <div><button class="btn" id="sSave">Save</button></div>
     </div>
     ${displaySettingsHtml()}
+    <h2 style="margin-top:28px">Send list to phone</h2>
+    <div class="card">
+      <ol style="margin:0 0 10px;padding-left:22px;line-height:1.7">
+        <li>On the phone, install the free <b>ntfy</b> app (Play Store or App Store).</li>
+        <li>Open it, tap <b>＋</b> (Subscribe to topic) and type exactly:</li></ol>
+      <div class="topic">${esc(ntfyTopic())}</div>
+      <ol start="3" style="margin:10px 0 0;padding-left:22px;line-height:1.7"><li>Tap <b>Subscribe</b> and allow notifications. Done — say <b>“send”</b> or tap <b>📲 Send to phone</b> on the Shopping page.</li></ol>
+      <div class="row" style="margin-top:12px"><button class="btn ghost" id="testSend">Send a test</button>
+        <span class="muted">Keep this code private — anyone who knows it can see the list.</span></div>
+    </div>
     <h2 style="margin-top:28px">App updates</h2>
     <div class="card row"><span>Version <b>${esc(appVersion||'—')}</b></span>
       <button class="btn ghost" id="chkUpd">Check for updates</button>
@@ -675,6 +733,10 @@ function renderSettings(){
       stores:$('#sStores').value.split(',').map(s=>s.trim()).filter(Boolean)}; save(); view='today'; render(); };
   $('#chkUpd').onclick=async()=>{ $('#updMsg').textContent='Checking…'; $('#updMsg').textContent = await checkForUpdates(); };
   bindDisplaySettings();
+  $('#testSend').onclick=async()=>{
+    try{ const r = await fetch('https://ntfy.sh/', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({topic: ntfyTopic(), title:'Fatade Kitchen', message:'✅ It works! Shopping lists from the tablet will arrive here.', tags:['white_check_mark']})});
+      toast(r.ok ? 'Test sent — check the phone.' : 'Could not send the test.'); }catch(e){ toast('Could not send the test — is the tablet online?'); } };
   $('#exp').onclick=async()=>{ const t=JSON.stringify(db); try{ await navigator.clipboard.writeText(t); alert('Backup copied.'); }catch(e){ prompt('Copy this backup text:', t); } };
   $('#imp').onclick=()=>{ const t=prompt('Paste backup text:'); if(!t) return;
     try{ db=Object.assign(db, JSON.parse(t)); save(); render(); alert('Restored.'); }catch(e){ alert('That backup text is not valid.'); } };
