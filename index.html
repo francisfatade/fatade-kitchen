@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fatade Kitchen</title>
+<meta name="theme-color" content="#1f6f4a">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{
+  --bg:#fbf7f0; --card:#ffffff; --ink:#1d2420; --muted:#66706a; --line:#e6dfd2;
+  --green:#1f6f4a; --green-soft:#e3f1e8; --orange:#d9622b; --orange-soft:#fbe7dc;
+  --blue:#2d5f9a; --blue-soft:#e2ebf7; --red:#b33a3a; --red-soft:#f7e1e1;
+  --radius:18px;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#141815;--card:#1d231f;--ink:#eef2ee;--muted:#9aa59e;--line:#2c352f;
+    --green:#5cc08c;--green-soft:#1f3a2b;--orange:#f08a55;--orange-soft:#3d2619;
+    --blue:#7fa9e0;--blue-soft:#1c2a3d;--red:#e07a7a;--red-soft:#3d1f1f;}
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);
+  font:18px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+header{display:flex;align-items:center;gap:16px;padding:16px 24px;background:var(--green);color:#fff}
+header h1{margin:0;font-size:26px;letter-spacing:.3px}
+header .date{margin-left:auto;font-size:18px;opacity:.9;text-align:right}
+nav{display:flex;gap:8px;padding:12px 24px;background:var(--card);border-bottom:1px solid var(--line);overflow-x:auto;position:sticky;top:0;z-index:5}
+nav button{border:0;background:transparent;padding:12px 20px;border-radius:999px;font-size:19px;font-weight:600;white-space:nowrap;color:var(--muted)}
+nav button.on{background:var(--green-soft);color:var(--green)}
+main{padding:20px 24px 80px;max-width:1400px;margin:0 auto}
+h2{font-size:24px;margin:8px 0 14px}
+h3{font-size:19px;margin:0 0 6px}
+.muted{color:var(--muted)}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.slot{display:flex;flex-direction:column;gap:6px;min-height:120px;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:var(--radius);padding:14px 16px}
+.slot:active{transform:scale(.99)}
+.slot .who{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+.slot .meal{font-size:21px;font-weight:600;display:flex;gap:10px;align-items:center}
+.slot .meal .em{font-size:32px}
+.slot.empty .meal{color:var(--muted);font-weight:500}
+.who-kids{color:var(--orange)} .who-wife{color:var(--blue)} .who-me{color:var(--green)} .who-family{color:var(--ink)}
+.tip{font-size:15px;background:var(--green-soft);color:var(--ink);border-radius:12px;padding:8px 10px}
+.pill{display:inline-block;font-size:13px;font-weight:700;padding:3px 9px;border-radius:999px;margin-right:4px}
+.p-d{background:var(--green-soft);color:var(--green)} .p-k{background:var(--orange-soft);color:var(--orange)}
+.p-p{background:var(--blue-soft);color:var(--blue)} .p-x{background:var(--red-soft);color:var(--red)}
+.btn{border:0;border-radius:14px;padding:14px 20px;font-weight:700;font-size:18px;background:var(--green);color:#fff}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+.btn.warn{background:var(--red-soft);color:var(--red)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+.banner{display:flex;gap:14px;align-items:flex-start;background:var(--green-soft);border-radius:var(--radius);padding:14px 18px;margin-bottom:18px}
+.banner .big{font-size:34px}
+/* week */
+.week{display:grid;grid-template-columns:170px repeat(7,minmax(130px,1fr));gap:6px;overflow-x:auto}
+.week .hd{font-weight:700;text-align:center;padding:8px 4px;border-radius:12px}
+.week .hd.today{background:var(--green);color:#fff}
+.week .lab{font-size:14px;font-weight:700;padding:8px 6px;display:flex;align-items:center}
+.week .cell{min-height:78px;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:6px 8px;font-size:15px;text-align:left;display:flex;flex-direction:column;gap:2px}
+.week .cell .em{font-size:22px}
+.week .cell.na{background:transparent;border-style:dashed;opacity:.4;cursor:default}
+.week .cell.skip{color:var(--muted);font-style:italic}
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;justify-content:center;z-index:20}
+.scrim.on{display:flex}
+.sheet{background:var(--bg);width:min(1100px,100%);max-height:88vh;overflow:auto;border-radius:24px 24px 0 0;padding:20px 24px 32px}
+.choices{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));margin-top:12px}
+.choice{display:flex;gap:12px;align-items:flex-start;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:16px;padding:12px 14px}
+.choice .em{font-size:34px;line-height:1}
+.choice.cur{outline:3px solid var(--green)}
+.choice small{display:block;color:var(--muted);font-size:14px;margin-top:4px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:8px 14px;font-size:16px;font-weight:600}
+.chip.on{background:var(--green);border-color:var(--green);color:#fff}
+/* shopping */
+.shop label{display:flex;gap:14px;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line);font-size:19px}
+.shop input{width:28px;height:28px;accent-color:var(--green)}
+.shop label.got span{text-decoration:line-through;color:var(--muted)}
+input[type=text],textarea{font:inherit;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.form{display:grid;gap:12px;max-width:720px}
+@media (max-width:640px){
+  header{padding:12px 16px} header h1{font-size:21px}
+  nav,main{padding-left:16px;padding-right:16px}
+  .week{grid-template-columns:110px repeat(7,120px)}
+}
+</style>
+</head>
+<body>
+<header>
+  <svg width="40" height="40" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="34" r="22" fill="#fff" opacity=".18"/><path d="M14 34h36a18 18 0 0 1-36 0z" fill="#fff"/><path d="M24 14c0 6 4 6 4 12M32 12c0 6 4 6 4 12M40 14c0 6 4 6 4 12" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+  <h1>Fatade Kitchen</h1>
+  <div class="date" id="hdrDate"></div>
+</header>
+<nav id="nav">
+  <button data-v="today" class="on">Today</button>
+  <button data-v="week">This week</button>
+  <button data-v="shop">Shopping</button>
+  <button data-v="meals">Meals</button>
+  <button data-v="settings">Settings</button>
+</nav>
+<main id="main"></main>
+<div class="scrim" id="scrim"><div class="sheet" id="sheet"></div></div>
+
+<script>
+/* ---------- Meal library ----------
+   cats: breakfast | lunchbox | lunch | dinner | late
+   k = kid-friendly, d = blood-sugar friendly, p = packs well
+*/
+const BASE_MEALS = [
+  // Breakfast
+  {id:'moimoi-egg', name:'Moi moi & boiled egg', em:'🫘', cats:['breakfast','lunchbox','lunch','late'], k:1,d:1,p:1,
+   ing:['Beans (peeled)','Eggs','Tatashe & onions','Palm/veg oil','Crayfish'], prep:'Soak & peel beans tonight', tip:'Great choice — protein-rich, slow-release.'},
+  {id:'egg-plantain', name:'Egg sauce & boiled unripe plantain', em:'🍳', cats:['breakfast','lunch'], k:1,d:1,p:1,
+   ing:['Unripe plantain','Eggs','Tomatoes','Onions','Pepper'], tip:'Unripe (green) plantain only. 1 finger max.'},
+  {id:'veg-omelette', name:'Veggie omelette & avocado', em:'🥑', cats:['breakfast','late'], k:0,d:1,p:1,
+   ing:['Eggs','Spinach / ugu','Onions','Tatashe','Avocado'], tip:'Very low carb — ideal on a fasting morning.'},
+  {id:'okpa', name:'Okpa (Bambara nut pudding)', em:'🟠', cats:['breakfast','lunch'], k:1,d:1,p:1,
+   ing:['Okpa flour','Palm oil','Pepper','Salt'], tip:'Half a wrap is enough. Pair with garden egg.'},
+  {id:'oats-nuts', name:'Oats with groundnuts (no sugar)', em:'🥣', cats:['breakfast'], k:1,d:1,p:0,
+   ing:['Rolled oats','Groundnuts','Milk (unsweetened)','Cinnamon'], tip:'Steel-cut / rolled, not instant. No sugar — cinnamon instead.'},
+  {id:'akara-pap', name:'Akara & pap', em:'🧆', cats:['breakfast'], k:1,d:0,p:0,
+   ing:['Beans (peeled)','Onions','Pepper','Pap (ogi)','Milk','Vegetable oil'], prep:'Soak & peel beans tonight',
+   tip:'Daddy: akara is fine, skip the pap — have garden eggs instead.'},
+  {id:'yam-egg', name:'Boiled yam & egg sauce', em:'🍠', cats:['breakfast'], k:1,d:0,p:0,
+   ing:['Yam','Eggs','Tomatoes','Onions','Pepper'], tip:'Daddy: swap yam for unripe plantain, or 2 small slices only.'},
+  {id:'bread-egg', name:'Bread & fried egg', em:'🍞', cats:['breakfast','lunchbox'], k:1,d:0,p:1,
+   ing:['Bread','Eggs','Butter'], tip:'Daddy: wholewheat bread, 1 slice, extra egg.'},
+  {id:'custard', name:'Custard & akara', em:'🍮', cats:['breakfast'], k:1,d:0,p:0,
+   ing:['Custard powder','Milk','Sugar','Beans (peeled)','Onions'], prep:'Soak & peel beans tonight'},
+  {id:'indomie-egg', name:'Noodles & egg', em:'🍜', cats:['breakfast','lunchbox'], k:1,d:0,p:1,
+   ing:['Noodles','Eggs','Carrots','Green beans']},
+  {id:'pancakes', name:'Pancakes & sausage', em:'🥞', cats:['breakfast','lunchbox'], k:1,d:0,p:1,
+   ing:['Flour','Eggs','Milk','Sausages']},
+  {id:'sweet-potato-egg', name:'Sweet potato & egg sauce', em:'🍠', cats:['breakfast','lunch'], k:1,d:1,p:1,
+   ing:['Sweet potato','Eggs','Tomatoes','Onions'], tip:'Boil, don\'t fry. Palm-size portion with skin on.'},
+
+  // Kids lunchbox
+  {id:'jollof-chicken', name:'Jollof rice & chicken', em:'🍗', cats:['lunchbox','dinner'], k:1,d:0,p:1,
+   ing:['Rice','Chicken','Tomatoes','Tatashe','Onions','Curry & thyme','Stock cubes'],
+   tip:'Daddy: 4 spoons rice max, double chicken, add salad.'},
+  {id:'fried-rice', name:'Fried rice & plantain', em:'🍚', cats:['lunchbox','dinner'], k:1,d:0,p:1,
+   ing:['Rice','Carrots','Green beans','Sweetcorn','Liver','Ripe plantain','Chicken'],
+   tip:'Daddy: skip the dodo, small rice, more protein.'},
+  {id:'jollof-spag', name:'Jollof spaghetti & fish', em:'🍝', cats:['lunchbox','dinner'], k:1,d:0,p:1,
+   ing:['Spaghetti','Tomatoes','Tatashe','Mackerel (titus)','Onions']},
+  {id:'meatpie', name:'Meat pie & fruit', em:'🥧', cats:['lunchbox'], k:1,d:0,p:1,
+   ing:['Flour','Butter','Minced meat','Potatoes','Carrots','Bananas']},
+  {id:'sandwich', name:'Egg & chicken sandwich', em:'🥪', cats:['lunchbox'], k:1,d:0,p:1,
+   ing:['Bread','Eggs','Chicken','Lettuce','Mayonnaise']},
+  {id:'plantain-beans', name:'Beans & dodo', em:'🍌', cats:['lunchbox','dinner'], k:1,d:0,p:1,
+   ing:['Beans','Ripe plantain','Palm oil','Onions','Crayfish'], prep:'Soak beans tonight',
+   tip:'Daddy: beans yes, dodo no (or 3 small pieces).'},
+  {id:'yam-chips', name:'Yam chips & chicken', em:'🍟', cats:['lunchbox'], k:1,d:0,p:1,
+   ing:['Yam','Chicken','Vegetable oil']},
+  {id:'puffpuff-snack', name:'Puff-puff & juice (treat)', em:'🍩', cats:['lunchbox'], k:1,d:0,p:1,
+   ing:['Flour','Yeast','Sugar','Vegetable oil','Juice']},
+
+  // Daddy lunch pack (blood-sugar friendly)
+  {id:'beans-unripe', name:'Beans porridge with unripe plantain', em:'🫘', cats:['lunch','dinner'], k:1,d:1,p:1,
+   ing:['Beans','Unripe plantain','Palm oil','Onions','Crayfish','Ugu'], prep:'Soak beans tonight',
+   tip:'One of the best lunch packs for blood sugar.'},
+  {id:'fish-salad', name:'Grilled fish & Nigerian salad', em:'🐟', cats:['lunch','dinner','late'], k:0,d:1,p:1,
+   ing:['Croaker / tilapia','Cabbage','Carrots','Cucumber','Tomatoes','Eggs'], tip:'Go easy on salad cream — use lemon & oil.'},
+  {id:'chicken-veg', name:'Peppered chicken & stir-fried veg', em:'🥦', cats:['lunch','dinner','late'], k:1,d:1,p:1,
+   ing:['Chicken','Green beans','Carrots','Cabbage','Tatashe','Onions']},
+  {id:'cauli-fried', name:'Cauliflower "fried rice" & chicken', em:'🥬', cats:['lunch','dinner'], k:0,d:1,p:1,
+   ing:['Cauliflower','Carrots','Green beans','Chicken','Liver'], tip:'Looks like fried rice, a fraction of the carbs.'},
+  {id:'ofada-small', name:'Ofada rice (small) & ayamase', em:'🌶️', cats:['lunch','dinner'], k:0,d:1,p:1,
+   ing:['Ofada rice','Green peppers','Locust beans (iru)','Assorted meat','Eggs','Palm oil'],
+   tip:'Ofada is less refined than white rice. Still 4 spoons max.'},
+  {id:'brown-jollof', name:'Brown-rice jollof & turkey', em:'🦃', cats:['lunch','dinner'], k:1,d:1,p:1,
+   ing:['Brown rice','Turkey','Tomatoes','Tatashe','Onions','Mixed veg'], tip:'Fist-size rice, half the plate veg.'},
+  {id:'moimoi-salad', name:'Moi moi & vegetable salad', em:'🥗', cats:['lunch'], k:0,d:1,p:1,
+   ing:['Beans (peeled)','Eggs','Cabbage','Cucumber','Carrots'], prep:'Soak & peel beans tonight'},
+  {id:'gizdodo-lite', name:'Peppered gizzard & garden eggs', em:'🍆', cats:['lunch','late'], k:0,d:1,p:1,
+   ing:['Gizzards','Garden eggs','Tatashe','Onions']},
+
+  // Family dinner
+  {id:'efo-swallow', name:'Efo riro & swallow', em:'🥬', cats:['dinner'], k:1,d:1,p:0,
+   ing:['Spinach (efo)','Assorted meat','Stockfish','Tatashe','Locust beans (iru)','Palm oil','Swallow of choice'],
+   tip:'Daddy: oat / plantain-flour swallow, fist-size — or skip swallow and double the soup.'},
+  {id:'egusi-swallow', name:'Egusi soup & swallow', em:'🍲', cats:['dinner'], k:1,d:1,p:0,
+   ing:['Egusi','Ugu / bitterleaf','Assorted meat','Stockfish','Crayfish','Palm oil','Swallow of choice'],
+   tip:'Daddy: oat / wheat swallow, small wrap. Avoid eba & pounded yam.'},
+  {id:'okra-swallow', name:'Okra soup & swallow', em:'🫛', cats:['dinner'], k:1,d:1,p:0,
+   ing:['Okra','Fish','Assorted meat','Crayfish','Ugu','Palm oil','Swallow of choice'],
+   tip:'Okra is excellent for blood sugar. Small oat swallow.'},
+  {id:'ogbono', name:'Ogbono soup & swallow', em:'🥘', cats:['dinner'], k:1,d:1,p:0,
+   ing:['Ogbono','Assorted meat','Stockfish','Ugu','Palm oil','Swallow of choice'], tip:'Same swallow rule: oat/wheat, small.'},
+  {id:'edikaikong', name:'Edikaikong & swallow', em:'🌿', cats:['dinner'], k:0,d:1,p:0,
+   ing:['Ugu','Waterleaf','Periwinkle','Assorted meat','Stockfish','Palm oil','Swallow of choice'],
+   tip:'Vegetable-heavy — one of the best soups for Daddy.'},
+  {id:'banga', name:'Banga soup & starch', em:'🌴', cats:['dinner'], k:1,d:0,p:0,
+   ing:['Palm fruit concentrate','Fish','Beletete spice','Starch / swallow'], tip:'Daddy: soup & fish only, skip the starch.'},
+  {id:'stew-rice', name:'White rice & stew', em:'🍛', cats:['dinner','lunchbox'], k:1,d:0,p:1,
+   ing:['Rice','Tomatoes','Tatashe','Chicken / beef','Onions'], tip:'Daddy: cauliflower rice or 4 spoons rice + extra stew meat.'},
+  {id:'asaro', name:'Yam porridge (asaro)', em:'🥣', cats:['dinner'], k:1,d:0,p:0,
+   ing:['Yam','Palm oil','Crayfish','Ugu','Pepper','Onions'], tip:'Daddy: have pepper soup instead tonight.'},
+  {id:'pepper-soup', name:'Goat / fish pepper soup', em:'🌶️', cats:['dinner','late','lunch'], k:0,d:1,p:1,
+   ing:['Goat meat / catfish','Pepper soup spice','Uziza / scent leaf','Pepper'], tip:'Perfect late-night plate — no carbs needed.'},
+  {id:'chicken-stew-plantain', name:'Chicken stew & boiled unripe plantain', em:'🍗', cats:['dinner','lunch'], k:1,d:1,p:1,
+   ing:['Chicken','Tomatoes','Tatashe','Unripe plantain','Onions']},
+
+  // Late plate (Daddy, light & low-carb)
+  {id:'eggs-cucumber', name:'Boiled eggs & cucumber', em:'🥚', cats:['late'], k:0,d:1,p:1,
+   ing:['Eggs','Cucumber'], tip:'Ready in 10 minutes — keep 4 boiled eggs in the fridge.'},
+  {id:'nuts-gardenegg', name:'Groundnuts & garden eggs', em:'🥜', cats:['late'], k:0,d:1,p:1,
+   ing:['Groundnuts','Garden eggs'], tip:'One small handful of nuts.'},
+  {id:'soup-only', name:'Bowl of tonight\'s soup (no swallow)', em:'🍵', cats:['late'], k:0,d:1,p:0,
+   ing:[], tip:'Set aside a bowl of dinner soup with extra meat/fish before serving.'},
+  {id:'suya-salad', name:'Suya & onion-tomato salad', em:'🥩', cats:['late','lunch'], k:0,d:1,p:1,
+   ing:['Beef (suya cut)','Suya spice (yaji)','Onions','Tomatoes','Cabbage']},
+  {id:'yoghurt-tiger', name:'Plain yoghurt & tiger nuts', em:'🥛', cats:['late','breakfast'], k:0,d:1,p:1,
+   ing:['Plain unsweetened yoghurt','Tiger nuts'], tip:'Unsweetened only — check the label for sugar.'},
+];
+
+const SLOTS = [
+  {id:'kidsBf',  who:'kids',   cats:['breakfast'], label:s=>`${s.kids} breakfast`},
+  {id:'kidsBox', who:'kids',   cats:['lunchbox'],  label:s=>`${s.kids} lunchbox`, weekdayOnly:true},
+  {id:'wifeBf',  who:'wife',   cats:['breakfast'], label:s=>`${s.wife}'s breakfast`},
+  {id:'meBf',    who:'me',     cats:['breakfast'], d:1, label:(s,we)=>we?`${s.me}'s breakfast`:`${s.me}'s breakfast to go`},
+  {id:'meLunch', who:'me',     cats:['lunch'],     d:1, label:s=>`${s.me}'s lunch pack`, weekdayOnly:true},
+  {id:'dinner',  who:'family', cats:['dinner'],    label:()=>`Family dinner`},
+  {id:'meLate',  who:'me',     cats:['late'],      d:1, label:s=>`${s.me}'s late plate`},
+];
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const DAYS_LONG = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+/* ---------- Storage ---------- */
+const KEY = 'fatadeKitchen.v1';
+function load(){
+  try{ const raw = localStorage.getItem(KEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return {};
+}
+let db = Object.assign({names:{me:'Daddy',wife:'Mummy',kids:'Kids'}, plans:{}, custom:[], got:{}}, load());
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }
+
+/* ---------- Helpers ---------- */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const allMeals = () => BASE_MEALS.concat(db.custom);
+const mealById = id => allMeals().find(m => m.id === id);
+let weekOffset = 0;
+
+function mondayOf(d){ const x = new Date(d); x.setHours(0,0,0,0); x.setDate(x.getDate() - ((x.getDay()+6)%7)); return x; }
+function weekKey(off=weekOffset){ const m = mondayOf(new Date()); m.setDate(m.getDate()+off*7);
+  return `${m.getFullYear()}-${String(m.getMonth()+1).padStart(2,'0')}-${String(m.getDate()).padStart(2,'0')}`; }
+function weekDates(off=weekOffset){ const m = mondayOf(new Date()); m.setDate(m.getDate()+off*7);
+  return DAYS.map((_,i)=>{ const d=new Date(m); d.setDate(m.getDate()+i); return d; }); }
+function todayIdx(){ return (new Date().getDay()+6)%7; }
+function plan(wk=weekKey()){ return db.plans[wk] ||= {}; }
+function slotsFor(dayIdx){ const we = dayIdx>=5; return SLOTS.filter(s=>!(we && s.weekdayOnly)); }
+function getPick(wk, day, slot){ return (db.plans[wk]||{})[day]?.[slot]; }
+function setPick(wk, day, slot, val){
+  const p = plan(wk); p[day] ||= {};
+  if(val==null) delete p[day][slot]; else p[day][slot] = val;
+  save();
+}
+function candidates(slot, showAll){
+  return allMeals().filter(m => m.cats.some(c=>slot.cats.includes(c)) && (showAll || !slot.d || m.d));
+}
+function fmtDate(d){ return d.toLocaleDateString(undefined,{weekday:'long', day:'numeric', month:'long'}); }
+
+/* ---------- Views ---------- */
+let view = 'today';
+function render(){
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on', b.dataset.v===view));
+  $('#hdrDate').textContent = fmtDate(new Date());
+  ({today:renderToday, week:renderWeek, shop:renderShop, meals:renderMeals, settings:renderSettings})[view]();
+}
+
+function slotCard(wk, day, slot){
+  const we = day>=5, pick = getPick(wk, day, slot.id), m = pick && pick!=='skip' ? mealById(pick) : null;
+  const tip = m && (slot.who==='me' || slot.who==='family') && m.tip ? `<div class="tip">💚 ${esc(m.tip)}</div>` : '';
+  const warn = m && slot.who==='family' && !m.d ? `<div><span class="pill p-x">${esc(db.names.me)}: use the swap tip</span></div>` : '';
+  return `<button class="slot ${m?'':'empty'}" data-day="${day}" data-slot="${slot.id}">
+    <span class="who who-${slot.who}">${esc(slot.label(db.names, we))}</span>
+    <span class="meal">${m?`<span class="em">${m.em}</span>${esc(m.name)}`: pick==='skip' ? 'Skipping' : '＋ Tap to choose'}</span>
+    ${warn}${tip}
+  </button>`;
+}
+
+function renderToday(){
+  weekOffset = 0;
+  const wk = weekKey(), d = todayIdx(), slots = slotsFor(d);
+  const empty = slots.filter(s=>!getPick(wk,d,s.id)).length;
+  // Tomorrow's prep (may roll into next week on Sunday)
+  const tWk = d===6 ? weekKey(1) : wk, tD = (d+1)%7;
+  const prep = [...new Set(slotsFor(tD).map(s=>getPick(tWk,tD,s.id)).map(id=>id&&mealById(id)).filter(m=>m&&m.prep).map(m=>`${m.prep} — for ${m.name}`))];
+  const late = getPick(wk,d,'meLate'), lateM = late && late!=='skip' && mealById(late);
+  $('#main').innerHTML = `
+    ${lateM ? `<div class="banner"><span class="big">🌙</span><div><h3>Late plate for ${esc(db.names.me)}</h3>
+      ${lateM.em} <b>${esc(lateM.name)}</b> — set it aside before dinner is served.</div></div>` : ''}
+    <div class="row"><h2>${DAYS_LONG[d]}'s meals</h2><span class="spacer"></span>
+      ${empty ? `<button class="btn" id="fillToday">✨ Suggest ${empty} meal${empty>1?'s':''}</button>` : ''}</div>
+    <div class="grid">${slots.map(s=>slotCard(wk,d,s)).join('')}</div>
+    <h2 style="margin-top:28px">Prep tonight for tomorrow</h2>
+    <div class="card">${prep.length ? prep.map(p=>`<div style="padding:6px 0">🫙 ${esc(p)}</div>`).join('')
+      : `<span class="muted">Nothing to soak or defrost for tomorrow${tD<5?'':''}. Pick tomorrow's meals in “This week”.</span>`}</div>
+    <h2 style="margin-top:28px">${esc(db.names.me)}'s plate rule</h2>
+    <div class="card">½ plate vegetables · ¼ protein (fish, chicken, eggs, beans) · ¼ carbs (fist-size).<br>
+      <span class="muted">Swallow: oat, wheat or unripe-plantain flour, small. Avoid eba, pounded yam, white bread, sweet drinks. Follow your doctor's targets.</span></div>`;
+  $('#main').querySelectorAll('.slot').forEach(b=>b.onclick=()=>openPicker(wk, +b.dataset.day, b.dataset.slot));
+  const f = $('#fillToday'); if(f) f.onclick = ()=>{ autofill(wk,[d]); render(); };
+}
+
+function renderWeek(){
+  const wk = weekKey(), dates = weekDates(), ti = weekOffset===0 ? todayIdx() : -1;
+  let html = `<div class="row" style="margin-bottom:14px">
+    <button class="btn ghost" id="prevW">◀</button>
+    <h2 style="margin:0">Week of ${dates[0].toLocaleDateString(undefined,{day:'numeric',month:'short'})}</h2>
+    <button class="btn ghost" id="nextW">▶</button>
+    <span class="spacer"></span>
+    <button class="btn" id="fillWeek">✨ Fill empty slots</button>
+    <button class="btn warn" id="clearWeek">Clear week</button></div>
+  <div class="week"><div></div>${DAYS.map((d,i)=>`<div class="hd ${i===ti?'today':''}">${d}<br><small>${dates[i].getDate()}</small></div>`).join('')}`;
+  for(const s of SLOTS){
+    html += `<div class="lab who-${s.who}">${esc(s.label(db.names,false))}</div>`;
+    for(let i=0;i<7;i++){
+      if(i>=5 && s.weekdayOnly){ html += `<div class="cell na"></div>`; continue; }
+      const p = getPick(wk,i,s.id), m = p && p!=='skip' && mealById(p);
+      html += `<button class="cell ${p==='skip'?'skip':''}" data-day="${i}" data-slot="${s.id}">
+        ${m ? `<span class="em">${m.em}</span>${esc(m.name)}` : p==='skip' ? 'skip' : '<span class="muted">＋</span>'}</button>`;
+    }
+  }
+  $('#main').innerHTML = html + '</div>';
+  $('#main').querySelectorAll('button.cell').forEach(b=>b.onclick=()=>openPicker(wk,+b.dataset.day,b.dataset.slot));
+  $('#prevW').onclick=()=>{weekOffset--; render();};
+  $('#nextW').onclick=()=>{weekOffset++; render();};
+  $('#fillWeek').onclick=()=>{ autofill(wk,[0,1,2,3,4,5,6]); render(); };
+  $('#clearWeek').onclick=()=>{ if(confirm('Clear every meal this week?')){ delete db.plans[wk]; save(); render(); } };
+}
+
+function autofill(wk, days){
+  const used = {}; // slotId -> Set of meal ids used this week (avoid repeats)
+  for(let i=0;i<7;i++) for(const s of SLOTS){ const p=getPick(wk,i,s.id); if(p) (used[s.id] ||= new Set()).add(p); }
+  for(const d of days){
+    for(const s of slotsFor(d)){
+      if(getPick(wk,d,s.id)) continue;
+      let pool = candidates(s,false);
+      if(s.who==='kids') pool = pool.filter(m=>m.k);
+      if(s.id==='meLate'){ // if dinner is a soup, the "soup only" bowl is easiest
+        const dn = mealById(getPick(wk,d,'dinner')||''); if(dn && /swallow|starch/i.test(dn.name) && Math.random()<.5){ setPick(wk,d,s.id,'soup-only'); continue; }
+      }
+      const fresh = pool.filter(m=>!(used[s.id]||new Set()).has(m.id) && m.id!=='soup-only');
+      const choice = (fresh.length?fresh:pool)[Math.floor(Math.random()*(fresh.length||pool.length))];
+      if(choice){ setPick(wk,d,s.id,choice.id); (used[s.id] ||= new Set()).add(choice.id); }
+    }
+  }
+}
+
+function openPicker(wk, day, slotId){
+  const slot = SLOTS.find(s=>s.id===slotId), cur = getPick(wk,day,slotId);
+  let showAll = false;
+  const draw = () => {
+    const list = candidates(slot, showAll);
+    $('#sheet').innerHTML = `
+      <div class="row"><div><div class="who who-${slot.who}" style="font-weight:700">${DAYS_LONG[day]}</div>
+        <h2 style="margin:2px 0">${esc(slot.label(db.names, day>=5))}</h2></div>
+        <span class="spacer"></span>
+        ${slot.d ? `<button class="chip ${showAll?'':'on'}" id="dOnly">💚 Blood-sugar friendly only</button>` : ''}
+        <button class="btn ghost" id="skip">Skip</button>
+        ${cur ? `<button class="btn ghost" id="clr">Clear</button>`:''}
+        <button class="btn ghost" id="close">✕</button></div>
+      <div class="choices">${list.map(m=>`<button class="choice ${m.id===cur?'cur':''}" data-id="${m.id}">
+        <span class="em">${m.em}</span><span><b>${esc(m.name)}</b>
+        <small>${m.d?'<span class="pill p-d">💚 sugar-friendly</span>':''}${m.k?'<span class="pill p-k">kids</span>':''}${m.p?'<span class="pill p-p">packs</span>':''}</small>
+        ${slot.d && m.tip ? `<small>${esc(m.tip)}</small>`:''}</span></button>`).join('')}</div>`;
+    $('#sheet').querySelectorAll('.choice').forEach(b=>b.onclick=()=>{ setPick(wk,day,slotId,b.dataset.id); closePicker(); });
+    $('#skip').onclick=()=>{ setPick(wk,day,slotId,'skip'); closePicker(); };
+    $('#close').onclick=closePicker;
+    if($('#clr')) $('#clr').onclick=()=>{ setPick(wk,day,slotId,null); closePicker(); };
+    if($('#dOnly')) $('#dOnly').onclick=()=>{ showAll=!showAll; draw(); };
+  };
+  draw(); $('#scrim').classList.add('on');
+}
+function closePicker(){ $('#scrim').classList.remove('on'); render(); }
+$('#scrim').onclick = e => { if(e.target.id==='scrim') closePicker(); };
+
+function renderShop(){
+  const wk = weekKey(0), counts = {};
+  for(let i=0;i<7;i++) for(const s of slotsFor(i)){
+    const m = mealById(getPick(wk,i,s.id)||''); if(!m) continue;
+    for(const g of m.ing) counts[g] = (counts[g]||0)+1;
+  }
+  const items = Object.keys(counts).sort((a,b)=>a.localeCompare(b));
+  const got = db.got[wk] ||= {};
+  $('#main').innerHTML = `<div class="row"><h2>Shopping for this week</h2><span class="spacer"></span>
+      <button class="btn ghost" id="resetGot">Untick all</button></div>
+    ${items.length ? `<div class="card shop">${items.map(g=>`<label class="${got[g]?'got':''}">
+      <input type="checkbox" data-g="${esc(g)}" ${got[g]?'checked':''}><span>${esc(g)}</span>
+      <span class="spacer"></span><span class="muted">${counts[g]} meal${counts[g]>1?'s':''}</span></label>`).join('')}</div>`
+      : `<div class="card muted">Plan some meals in “This week” and the shopping list builds itself.</div>`}`;
+  $('#main').querySelectorAll('input[type=checkbox]').forEach(c=>c.onchange=()=>{
+    got[c.dataset.g]=c.checked; save(); c.parentElement.classList.toggle('got',c.checked); });
+  $('#resetGot').onclick=()=>{ db.got[wk]={}; save(); render(); };
+}
+
+let mealFilter = 'all';
+function renderMeals(){
+  const F = {all:'All', d:'💚 Sugar-friendly', k:'Kids love', breakfast:'Breakfast', lunchbox:'Lunchbox', lunch:'Lunch pack', dinner:'Dinner', late:'Late plate'};
+  const list = allMeals().filter(m => mealFilter==='all' || (mealFilter==='d'?m.d : mealFilter==='k'?m.k : m.cats.includes(mealFilter)));
+  $('#main').innerHTML = `<h2>Meal library</h2>
+    <div class="chips" style="margin-bottom:14px">${Object.entries(F).map(([k,v])=>`<button class="chip ${k===mealFilter?'on':''}" data-f="${k}">${v}</button>`).join('')}</div>
+    <div class="grid">${list.map(m=>`<div class="card"><div class="row"><span style="font-size:34px">${m.em}</span><h3 style="margin:0">${esc(m.name)}</h3></div>
+      <div style="margin:8px 0">${m.d?'<span class="pill p-d">💚 sugar-friendly</span>':''}${m.k?'<span class="pill p-k">kids</span>':''}${m.p?'<span class="pill p-p">packs</span>':''}</div>
+      ${m.tip?`<div class="tip">💚 ${esc(m.tip)}</div>`:''}
+      ${m.ing.length?`<div class="muted" style="font-size:15px;margin-top:8px">${esc(m.ing.join(', '))}</div>`:''}
+      ${m.custom?`<button class="btn warn" style="margin-top:10px;padding:8px 14px" data-del="${m.id}">Remove</button>`:''}</div>`).join('')}</div>
+    <h2 style="margin-top:30px">Add a family meal</h2>
+    <div class="card form">
+      <input type="text" id="nName" placeholder="Meal name, e.g. Abacha">
+      <input type="text" id="nEm" placeholder="Emoji (optional)" maxlength="4">
+      <div class="chips" id="nCats">${['breakfast','lunchbox','lunch','dinner','late'].map(c=>`<button class="chip" data-c="${c}">${F[c]}</button>`).join('')}</div>
+      <div class="chips"><button class="chip" id="nD">💚 Sugar-friendly</button><button class="chip" id="nK">Kids love it</button><button class="chip" id="nP">Packs well</button></div>
+      <textarea id="nIng" rows="2" placeholder="Ingredients, separated by commas"></textarea>
+      <input type="text" id="nTip" placeholder="Tip for ${esc(db.names.me)} (optional)">
+      <div><button class="btn" id="nSave">Add meal</button></div>
+    </div>`;
+  $('#main').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{mealFilter=b.dataset.f; render();});
+  $('#main').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ db.custom=db.custom.filter(m=>m.id!==b.dataset.del); save(); render(); });
+  $('#main').querySelectorAll('#nCats .chip, #nD, #nK, #nP').forEach(b=>b.onclick=()=>b.classList.toggle('on'));
+  $('#nSave').onclick=()=>{
+    const name = $('#nName').value.trim(), cats=[...document.querySelectorAll('#nCats .chip.on')].map(b=>b.dataset.c);
+    if(!name || !cats.length){ alert('Give the meal a name and pick at least one mealtime.'); return; }
+    db.custom.push({id:'c'+Date.now(), custom:1, name, em:$('#nEm').value.trim()||'🍽️', cats,
+      d:+$('#nD').classList.contains('on'), k:+$('#nK').classList.contains('on'), p:+$('#nP').classList.contains('on'),
+      ing:$('#nIng').value.split(',').map(s=>s.trim()).filter(Boolean), tip:$('#nTip').value.trim()});
+    save(); mealFilter='all'; render();
+  };
+}
+
+function renderSettings(){
+  $('#main').innerHTML = `<h2>Family</h2>
+    <div class="card form">
+      <label>What the app calls you<input type="text" id="sMe" value="${esc(db.names.me)}"></label>
+      <label>What the app calls your wife<input type="text" id="sWife" value="${esc(db.names.wife)}"></label>
+      <label>What the app calls the children<input type="text" id="sKids" value="${esc(db.names.kids)}"></label>
+      <div><button class="btn" id="sSave">Save</button></div>
+    </div>
+    <h2 style="margin-top:28px">Backup</h2>
+    <div class="card row"><button class="btn ghost" id="exp">Copy backup</button>
+      <button class="btn ghost" id="imp">Restore from backup</button>
+      <span class="muted">Plans are saved on this fridge only.</span></div>`;
+  $('#sSave').onclick=()=>{ db.names={me:$('#sMe').value.trim()||'Daddy', wife:$('#sWife').value.trim()||'Mummy', kids:$('#sKids').value.trim()||'Kids'}; save(); view='today'; render(); };
+  $('#exp').onclick=async()=>{ const t=JSON.stringify(db); try{ await navigator.clipboard.writeText(t); alert('Backup copied.'); }catch(e){ prompt('Copy this backup text:', t); } };
+  $('#imp').onclick=()=>{ const t=prompt('Paste backup text:'); if(!t) return;
+    try{ db=Object.assign(db, JSON.parse(t)); save(); render(); alert('Restored.'); }catch(e){ alert('That backup text is not valid.'); } };
+}
+
+$('#nav').onclick = e => { const v = e.target.closest('button')?.dataset.v; if(v){ view=v; if(v!=='week') weekOffset=0; render(); } };
+render();
+// Refresh "today" after midnight on an always-on screen
+setInterval(()=>{ if(view==='today') render(); }, 10*60*1000);
+if('serviceWorker' in navigator && location.protocol!=='file:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
