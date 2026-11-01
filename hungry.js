@@ -87,7 +87,8 @@ function chime(){
 
 async function hungryNow(source){
   const c = hungryCfg(), {dinner, late, prep} = hungryPlan(), me = db.names.me;
-  const g = typeof glucoseState === 'function' && LLU.configured() ? glucoseState() : null;
+  const g = LLU.configured() ? shownGlucose() : null;              // what the tablet shows (guest mode aware)
+  const realG = LLU.configured() ? glucoseState() : null;          // the phone message is private, so it gets the real one
   // Tablet card (screensaver gives way to it)
   if(typeof Saver !== 'undefined' && Saver.on) Saver.hide();
   if(view === 'settings') Lock.close();
@@ -116,7 +117,7 @@ async function hungryNow(source){
     const lines = [`${me} ń bọ̀ wálé — time to prep. 🍲`];
     if(dinner) lines.push(`Dinner: ${dinner.name}`);
     if(late) lines.push(`Late plate: ${late.name}`);
-    if(g) lines.push(`Sugar now: ${Math.round(g.value)} mg/dL ${ARROWS[g.trend] || ''}`);
+    if(realG) lines.push(`Sugar now: ${Math.round(realG.value)} mg/dL ${ARROWS[realG.trend] || ''}`);
     if(prep.length) lines.push(`For tomorrow: ${prep.join(' · ')}`);
     try{
       await fetch('https://ntfy.sh/', {method:'POST', headers:{'Content-Type':'application/json'},

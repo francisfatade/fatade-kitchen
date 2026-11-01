@@ -121,6 +121,9 @@ label input{margin-top:6px;color:var(--ink)}
 .g-ok .gval{color:var(--ok)} .g-high .gval{color:var(--warn)}
 .gband{fill:rgba(47,180,87,.14)}
 .gval{font-weight:800;letter-spacing:-.03em}
+.gcard{position:relative}
+.gdot-guest{position:absolute;right:12px;bottom:10px;width:5px;height:5px;border-radius:50%;background:var(--muted);opacity:.5}  /* tiny "guest mode" tell for the family */
+.guest-note{font-size:14px;background:var(--green-soft);border-radius:12px;padding:10px 12px}
 
 /* Grouped list rows (Settings) */
 .list{padding:4px 0}

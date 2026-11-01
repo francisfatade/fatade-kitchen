@@ -110,6 +110,24 @@ function glucoseState(){
   return {...d, mins, stale, lvl};
 }
 
+/* ---------- Guest mode ----------
+   When visitors are over, the tablet shows a calm, believable in-range reading
+   (around 116) instead of Daddy's real number. The real reading is still fetched,
+   and a real low still alerts — quietly, without numbers (see glucoseChanged). */
+const GUEST_BASE = 116;
+function guestValue(t){   // slow, smooth drift between about 112 and 120
+  const m = t / 60000;
+  return Math.round(GUEST_BASE + 3 * Math.sin(m / 47) + 1.5 * Math.sin(m / 13 + 1));
+}
+function guestState(){
+  const now = Date.now(), at = now - (60000 + (Math.floor(now / 60000) % 3) * 60000);   // "1–3 min ago"
+  const history = []; for(let t = now - 12*3600000; t <= at; t += 15*60000) history.push({v: guestValue(t), t});
+  history.push({v: guestValue(at), t: at});
+  return {value: guestValue(at), trend: 3, at, history, mins: Math.round((now - at) / 60000), stale: false, lvl: 'ok', guest: true};
+}
+// What the screens show: the real reading, or the guest reading when Guest mode is on
+function shownGlucose(){ return LLU.s.guest ? guestState() : glucoseState(); }
+
 /* ---------- UI ---------- */
 function sparkline(hist){
   const W = 600, H = 120, t1 = Date.now(), t0 = t1 - 12*3600000, lo = 40, hi = 300;
@@ -124,7 +142,7 @@ function sparkline(hist){
 }
 function glucoseCardHtml(){
   if(!LLU.configured()) return '';
-  const g = glucoseState(), who = esc(db.names.me);
+  const g = shownGlucose(), who = esc(db.names.me);
   if(!g) return `<div class="gcard g-stale" id="gcard"><div class="gmeta">${who}'s blood sugar · <i>Ṣúgà ẹ̀jẹ̀</i></div>
     <div class="gmsg">${esc(LLU.status || 'Connecting to LibreLinkUp…')}</div></div>`;
   const ago = g.mins <= 0 ? 'just now' : g.mins === 1 ? '1 min ago' : g.mins < 90 ? `${g.mins} min ago` : `${Math.round(g.mins/60)} h ago`;
@@ -135,10 +153,10 @@ function glucoseCardHtml(){
       <div class="gnote">${note} · ${TREND_WORDS[g.trend]||''} · ${ago}</div></div></div>
     ${sparkline(g.history)}
     <div class="gaxis"><span>12 h ago</span><span>range ${LLU.s.low}–${LLU.s.high}</span><span>now</span></div>
-    ${LLU.status ? `<div class="gmsg">${esc(LLU.status)}</div>` : ''}</div>`;
+    ${LLU.status && !g.guest ? `<div class="gmsg">${esc(LLU.status)}</div>` : ''}${g.guest ? '<span class="gdot-guest"></span>' : ''}</div>`;
 }
 function glucoseSaverHtml(){
-  const g = LLU.configured() && glucoseState(); if(!g) return '';
+  const g = LLU.configured() && shownGlucose(); if(!g) return '';
   return `<div class="ss-gluc g-${g.lvl}">${esc(db.names.me)}: <b>${Math.round(g.value)}</b> ${ARROWS[g.trend]||''} mg/dL${g.stale?' (old)':''}</div>`;
 }
 function glucoseChanged(){
@@ -149,6 +167,11 @@ function glucoseChanged(){
   if(g && g.lvl === 'low' && Date.now() - LLU.lastAlert > 15*60000){
     LLU.lastAlert = Date.now();
     if(Saver.on) Saver.hide();
+    if(LLU.s.guest){   // guests are over: no numbers, no red screen — just a quiet nudge
+      if(typeof chime === 'function') chime();
+      toast(`📱 ${db.names.wife}, please check the phone.`);
+      return;
+    }
     if(view !== 'today'){ view = 'today'; render(); }
     const msg = `Attention. ${db.names.me}'s blood sugar is low: ${Math.round(g.value)}, ${TREND_WORDS[g.trend]||''}.`;
     toast('⚠️ ' + msg);
@@ -165,6 +188,10 @@ function glucoseSettingsHtml(){
   return `<h2 style="margin-top:28px">${who}'s blood sugar <span class="yo-h">Ṣúgà ẹ̀jẹ̀ · FreeStyle Libre</span></h2>
     <div class="card form">
       <div id="gStatus" style="font-weight:600">${esc(glucoseStatusText())}</div>
+      <div class="optrow"><span>Home screen shows</span><div class="seg">
+        <button class="${s.guest ? '' : 'on'}" data-gmode="real">Real reading</button>
+        <button class="${s.guest ? 'on' : ''}" data-gmode="guest">👥 Guest mode · ~${GUEST_BASE}</button></div></div>
+      ${s.guest ? `<div class="guest-note">Guest mode is on: the tablet shows a calm in-range reading. A real low still gives a quiet chime and “please check the phone” — no numbers.</div>` : ''}
       <div class="muted">Sign in with <b>${esc(db.names.wife)}'s LibreLinkUp</b> account (the one following ${who}). It is saved on this tablet only.</div>
       <label>LibreLinkUp email<input type="email" id="gEmail" value="${esc(s.email||'')}" autocomplete="off"></label>
       <label>LibreLinkUp password<input type="password" id="gPw" placeholder="${s.pw ? '•••••••• (saved)' : ''}" autocomplete="off"></label>
@@ -177,6 +204,9 @@ function glucoseSettingsHtml(){
     </div>`;
 }
 function bindGlucoseSettings(){
+  document.querySelectorAll('[data-gmode]').forEach(b => b.onclick = () => {
+    LLU.s.guest = b.dataset.gmode === 'guest'; LLU.save();
+    toast(LLU.s.guest ? '👥 Guest mode on — the home screen shows ~116.' : 'Showing the real reading again.'); render(); });
   $('#gAlerts').onclick = () => { LLU.s.alerts = !LLU.s.alerts; LLU.save(); $('#gAlerts').classList.toggle('on', LLU.s.alerts); };
   $('#gConnect').onclick = async () => {
     const email = $('#gEmail').value.trim(), pw = $('#gPw').value;
