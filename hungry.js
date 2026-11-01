@@ -54,7 +54,10 @@ const CallRec = {
     toast(`🎵 “${file.name}” is now your dinner call${playable > 0 ? ` (${Math.round(playable)} s)` : ''}.`);
     if(view === 'settings') render();
   },
-  play(){ return new Promise(res => { if(!this.url) return res(); const a = new Audio(this.url); a.onended = a.onerror = () => res(); a.play().catch(() => res()); }); },
+  audio: null,
+  play(){ return new Promise(res => { if(!this.url) return res(); this.stopPlay(); const a = this.audio = new Audio(this.url);
+    a.onended = a.onerror = a.onpause = () => res(); a.play().catch(() => res()); }); },
+  stopPlay(){ if(this.audio){ const a = this.audio; this.audio = null; a.pause(); } },
   async remove(){ await this.tx('readwrite', s => s.delete('dinnerCall')); await this.load(); },
 };
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; };
@@ -102,16 +105,13 @@ async function hungryNow(source){
         ${prep.length ? `<div class="lrow"><span class="lic">🫙</span><span><small>Also for tomorrow</small><b>${esc(prep.join(' · '))}</b></span></div>` : ''}
       </div>
       <button class="btn hg-ok" id="hgOk">Ó dáa, I'm on it 👍</button>
+      ${c.snooze ? `<button class="btn ghost hg-snooze" id="hgSnooze">😴 Snooze ${c.snooze} min</button>` : ''}
+      <div class="hg-rule">${c.speak ? (c.repeat === 'repeat' ? `Keeps playing until someone taps “Ó dáa”${c.stopAfter ? ` · stops after ${c.stopAfter} min` : ''}.` : 'Plays once.') : ''}</div>
     </div>`;
   $('#scrim').classList.add('on');
-  $('#hgOk').onclick = () => { if(NATIVE) NATIVE.stopVoice(); else window.speechSynthesis?.cancel(); closePicker(); };
-
-  if(c.speak){
-    const menu = (dinner ? `Tonight's dinner is ${dinner.name}. ` : '') + (late ? `His late plate is ${late.name}.` : '');
-    const say = t => { if(t && typeof voice !== 'undefined' && !voice.active) voice.speak(t); };
-    if(c.useRec && CallRec.has){ CallRec.play().then(() => say(menu)); }      // Daddy's own song/voice first
-    else { chime(); setTimeout(() => say(`Ebi ń pa mí o! Ìyàwó, ${me} ń bọ̀ wálé. ` + menu), 1400); }
-  }
+  Alarm.start(c, {dinner, late, me});
+  $('#hgOk').onclick = () => { Alarm.stop(); closePicker(); toast('👍 Ó dáa! Dinner is on its way.'); };
+  const sz = $('#hgSnooze'); if(sz) sz.onclick = () => { Alarm.snooze(c.snooze); closePicker(); };
   if(c.phone && db.home.ntfy){
     const lines = [`${me} ń bọ̀ wálé — time to prep. 🍲`];
     if(dinner) lines.push(`Dinner: ${dinner.name}`);
@@ -124,6 +124,34 @@ async function hungryNow(source){
     }catch(e){}
   }
 }
+
+/* ---------- The ringing: once, or on repeat until someone taps "Ó dáa"; snooze; time limit ---------- */
+const Alarm = {
+  round: 0, started: 0, loop: null, snoozeT: null, active: false,   // active: card can't be dismissed by tapping outside
+  start(c, info){
+    this.stop(); if(!c.speak) return;
+    this.active = true;
+    this.started = Date.now(); this.info = info; this.cfg = c;
+    this.ring(++this.round);
+  },
+  async ring(id){
+    const c = this.cfg, {dinner, late, me} = this.info;
+    const menu = (dinner ? `Tonight's dinner is ${dinner.name}. ` : '') + (late ? `His late plate is ${late.name}.` : '');
+    const say = t => new Promise(res => { if(!t || typeof voice === 'undefined' || voice.active) return res(); voice.speak(t, res); setTimeout(res, 30000); });
+    if(c.useRec && CallRec.has){ await CallRec.play(); if(id !== this.round) return; await say(menu); }   // Daddy's own song first
+    else { chime(); await new Promise(r => setTimeout(r, 1400)); if(id !== this.round) return; await say(`Ebi ń pa mí o! Ìyàwó, ${me} ń bọ̀ wálé. ` + menu); }
+    if(id !== this.round || c.repeat !== 'repeat') return;
+    if(c.stopAfter && Date.now() - this.started > c.stopAfter * 60000){ this.stop(); closePicker(); return; }
+    this.loop = setTimeout(() => { if(id === this.round) this.ring(id); }, (c.gap || 30) * 1000);
+  },
+  silence(){ this.round++; this.active = false; clearTimeout(this.loop); CallRec.stopPlay(); if(NATIVE) NATIVE.stopVoice(); else window.speechSynthesis?.cancel(); },
+  stop(){ this.silence(); clearTimeout(this.snoozeT); this.snoozeT = null; },
+  snooze(min){
+    this.silence(); clearTimeout(this.snoozeT);
+    this.snoozeT = setTimeout(() => { this.snoozeT = null; hungryNow('snooze'); }, min * 60000);
+    toast(`😴 Snoozed — it will ring again in ${min} minutes.`);
+  },
+};
 
 // Once a day at the set time; if the tablet was asleep, it still plays when it wakes (until 9 pm)
 function hungryCheck(){
@@ -150,6 +178,13 @@ function hungrySettingsHtml(){
              <button class="btn ${CallRec.has ? 'ghost' : ''}" id="recStart">● ${CallRec.has ? 'Record again' : 'Record'}</button>
              ${CallRec.has ? `<button class="iconbtn" id="recDel" title="Delete recording">✕</button>` : ''}`}</div>
       ${CallRec.has ? `<div class="lrow"><div class="chips"><button class="chip ${c.useRec?'on':''}" id="hgUseRec">🎵 Use my recording</button></div></div>` : ''}
+      <div class="lrow ring-opts"><span class="lic">🔁</span><div style="flex:1">
+        <b>When it rings</b>
+        <div class="optrow"><span>Play</span><div class="seg">${[['once','Once'],['repeat','On repeat until “Ó dáa”']].map(([v,t]) => `<button class="${c.repeat===v?'on':''}" data-hg="repeat" data-v="${v}">${t}</button>`).join('')}</div></div>
+        ${c.repeat === 'repeat' ? `<div class="optrow"><span>Pause between</span><div class="seg">${[[10,'10 s'],[30,'30 s'],[60,'1 min'],[120,'2 min']].map(([v,t]) => `<button class="${c.gap===v?'on':''}" data-hg="gap" data-v="${v}">${t}</button>`).join('')}</div></div>
+        <div class="optrow"><span>Stop after</span><div class="seg">${[[5,'5 min'],[10,'10 min'],[15,'15 min'],[30,'30 min'],[0,'Never']].map(([v,t]) => `<button class="${c.stopAfter===v?'on':''}" data-hg="stopAfter" data-v="${v}">${t}</button>`).join('')}</div></div>` : ''}
+        <div class="optrow"><span>Snooze button</span><div class="seg">${[[0,'Off'],[5,'5 min'],[10,'10 min'],[15,'15 min']].map(([v,t]) => `<button class="${c.snooze===v?'on':''}" data-hg="snooze" data-v="${v}">${t}</button>`).join('')}</div></div>
+      </div></div>
       <div class="lrow"><div class="chips">
         <button class="chip ${c.on?'on':''}" id="hgOn">${c.on ? 'On' : 'Off'}</button>
         <button class="chip ${c.speak?'on':''}" id="hgSpeak">🔊 Call it out on the tablet</button>
@@ -174,6 +209,8 @@ function bindHungrySettings(){
   };
   on('recDel', async () => { if(confirm('Delete your recorded dinner call?')){ await CallRec.remove(); render(); } });
   on('hgUseRec', () => { c.useRec = !c.useRec; save(); render(); });
+  document.querySelectorAll('[data-hg]').forEach(b => b.onclick = () => {
+    const k = b.dataset.hg; c[k] = k === 'repeat' ? b.dataset.v : +b.dataset.v; save(); render(); });
 }
 /* Daddy's song, delivered with an app update. Bump v to send a new one;
    once installed (or deleted by the family) the same version isn't fetched again. */
@@ -194,6 +231,8 @@ async function installUpdateSong(){
 
 function hungryInit(){
   const c = hungryCfg(); if(c.useRec === undefined) c.useRec = true;
+  // Ringing defaults (older saved settings don't have them): repeat until acknowledged
+  for(const [k, v] of Object.entries({repeat:'repeat', gap:30, stopAfter:15, snooze:10})) if(c[k] === undefined) c[k] = v;
   CallRec.load().then(installUpdateSong);
   hungryCheck(); setInterval(hungryCheck, 30000);
 }

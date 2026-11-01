@@ -256,6 +256,25 @@ label input{margin-top:6px;color:var(--ink)}
 .upd-note{margin-top:22px;font-size:15px;opacity:.75}
 .upd-btn{margin-top:22px;background:#fff!important;color:#1c1c1e!important}
 
+/* Meal photos (photos.js) — emoji shows if there's no photo */
+.mpic{position:relative;display:grid;place-items:center;overflow:hidden;flex:none;background:var(--fill);border-radius:16px;width:52px;height:52px}
+.mpic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.mpic-em{font-size:30px;line-height:1}
+.mpic:not(.noimg) .mpic-em{opacity:0}
+.mpic.food-em{width:84px;height:84px;border-radius:20px}
+.mpic.food-em .mpic-em{font-size:42px}
+.mpic.xs{width:30px;height:30px;border-radius:9px;margin-right:6px;vertical-align:middle;display:inline-grid}
+.mpic.xs .mpic-em{font-size:18px}
+.mpic.hero{width:100%;height:auto;aspect-ratio:16/10;border-radius:18px}
+.mpic.hero .mpic-em{font-size:64px}
+.slot .meal .mpic.em{width:60px;height:60px}
+.drow{display:flex;align-items:center;gap:2px}
+.week .cell .mpic.xs{margin-bottom:4px}
+.credits{margin:24px 2px 0;font-size:14px;color:var(--muted)}
+.credits summary{cursor:pointer;font-weight:600}
+.credits ul{columns:2;column-gap:28px;padding-left:18px}
+.credits a{color:var(--blue)}
+
 /* Celebration */
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:120;overflow:hidden}
 .confetti i{position:absolute;top:-40px;left:var(--x);font-size:30px;font-style:normal;animation:fall var(--d) ease-in forwards}
@@ -282,6 +301,14 @@ label input{margin-top:6px;color:var(--ink)}
 .rec-time{font:600 17px var(--font);font-variant-numeric:tabular-nums;min-width:96px}
 #recStart:not(.ghost){background:var(--red)}
 .filebtn{display:inline-flex;align-items:center;cursor:pointer;color:var(--green)!important;font-size:17px}
+.hg-snooze{width:100%;margin-top:10px;padding:14px;font-size:17px}
+.hg-rule{margin-top:12px;font-size:14px;color:var(--muted)}
+.ring-opts b{display:block;margin-bottom:6px}
+.optrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:8px 0}
+.optrow > span{font-size:15px;font-weight:600;color:var(--muted);min-width:120px}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--fill);border-radius:12px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:8px 14px;font-size:15px;font-weight:600;color:var(--ink)}
+.seg button.on{background:var(--card);box-shadow:0 1px 4px rgba(0,0,0,.12);color:var(--green)}
 .timein{background:var(--fill);border:0;border-radius:12px;padding:10px 14px;font:600 20px var(--font);color:var(--ink)}
 
 /* Screensaver + toast polish */

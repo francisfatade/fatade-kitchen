@@ -77,7 +77,7 @@ const Saver = {
     Saver.paint(); Saver.slide();
     clearInterval(Saver.timer); Saver.timer = setInterval(() => { Saver.paint(); Saver.slide(); }, 12000);
   },
-  hide(){ Saver.on = false; clearInterval(Saver.timer); $('#saver').classList.remove('on'); },
+  hide(){ Saver.on = false; clearInterval(Saver.timer); $('#saver').classList.remove('on'); refreshSoon(); },
   slide(){
     const pics = Photos.urls, layers = document.querySelectorAll('#saver .ss-img');
     if(!pics.length){ layers.forEach(l=>l.classList.remove('show')); return; }
@@ -169,7 +169,7 @@ function familyInit(){
   ['pointerdown','keydown','touchstart'].forEach(ev => addEventListener(ev, Saver.poke, {passive:true, capture:true}));
   setInterval(Saver.check, 15000);
   // Android back button (installed app): close pop-ups, then go Home
-  window.__back = () => { if(Saver.on) Saver.hide(); else if($('#scrim').classList.contains('on')) closePicker(); else { view='today'; render(); } };
+  window.__back = () => { if(Saver.on) Saver.hide(); else if(Alarm.active) return; else if($('#scrim').classList.contains('on')) closePicker(); else { view='today'; render(); } };
   matchMedia('(orientation: portrait)').addEventListener('change', () => { if(view==='week') render(); });
   Photos.load().then(() => { applyBackdrop(); if(view==='today' || view==='settings') render(); });
   checkAppUpdate(); setInterval(checkAppUpdate, 30*60*1000);

@@ -129,6 +129,7 @@ nav small{font-weight:500;font-style:italic;opacity:.75;margin-left:2px}
 
 <script src="prices.js"></script>
 <script src="recipes.js"></script>
+<script src="photos.js"></script>
 <script src="family.js"></script>
 <script src="glucose.js"></script>
 <script src="profiles.js"></script>
@@ -270,7 +271,18 @@ function load(){
   return {};
 }
 let db = Object.assign({names:{me:'Daddy',wife:'Mummy',kids:'Kids'}, home:{kids:4, zip:'', stores:["Whole Foods","Seabra's","Super Fresh"]}, plans:{}, custom:[], got:{}, extras:{}}, load());
-function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} refreshSoon(); }
+// Keep whatever is on screen in step with the saved data (e.g. the Today screen after
+// clearing meals). Skipped mid-render, while a pop-up is open and on Settings (typing).
+let rendering = false, refreshTimer = 0;
+function refreshSoon(){
+  if(rendering || typeof render !== 'function') return;
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => {
+    if(view === 'settings' || document.querySelector('#scrim.on') || document.querySelector('#updOverlay.on')) return;
+    const y = scrollY; render(); scrollTo(0, y);
+  }, 120);
+}
 // Saved settings from older versions lack newer fields
 db.home = Object.assign({kids:4, zip:'', stores:["Whole Foods","Seabra's","Super Fresh"]}, db.home);
 db.extras ||= {};
@@ -328,8 +340,11 @@ function render(){
   const T = {today:['Today','Òní'], week:['This Week','Ọ̀sẹ̀ yìí'], shop:['Shopping','Ọjà'], meals:['Meals','Oúnjẹ'], settings:['Settings','Ètò']}[view];
   $('#hdrDate').textContent = `${fmtDate(new Date())} · ${view==='today' ? profileGreeting() : DAYS_YO[todayIdx()]}`;
   $('#hdrTitle').innerHTML = `${T[0]}<small>${T[1]}</small>`;
-  if(view==='settings' && Lock.needed()) return renderLock();
-  ({today:renderToday, week:renderWeek, shop:renderShop, meals:renderMeals, settings:renderSettings})[view]();
+  rendering = true;
+  try{
+    if(view==='settings' && Lock.needed()) return renderLock();
+    ({today:renderToday, week:renderWeek, shop:renderShop, meals:renderMeals, settings:renderSettings})[view]();
+  } finally { rendering = false; }
 }
 
 function slotCard(wk, day, slot){
@@ -340,7 +355,7 @@ function slotCard(wk, day, slot){
     ${recipeOf(m) ? `<a class="rlink" href="${recipeOf(m)}" target="_blank" rel="noopener">📖 Recipe</a>` : ''}</span>` : '';
   return `<button class="slot ${m?'':'empty'}" data-day="${day}" data-slot="${slot.id}">
     <span class="who who-${slot.who}">${esc(slot.label(db.names, we))} <span class="yo-w">· ${slot.yo}</span></span>
-    <span class="meal">${m?`<span class="em">${m.em}</span><span>${esc(m.name)}${yoName(m)?`<span class="yo">${esc(yoName(m))}</span>`:''}</span>`: pick==='skip' ? 'Skipping' : '＋ Tap to choose'}</span>
+    <span class="meal">${m?`${mealPic(m, 'em')}<span>${esc(m.name)}${yoName(m)?`<span class="yo">${esc(yoName(m))}</span>`:''}</span>`: pick==='skip' ? 'Skipping' : '＋ Tap to choose'}</span>
     ${meta}${warn}${tip}
     ${isVoteSlot(slot.id) ? `<span class="vstat ${voteStatus(wk,day,slot.id).cls}">${esc(voteStatus(wk,day,slot.id).txt)}</span>` : ''}
   </button>`;
@@ -391,7 +406,7 @@ function renderWeek(){
       <div class="dslots">${slotsFor(i).map(s=>{ const p=getPick(wk,i,s.id), m=p && p!=='skip' && mealById(p);
         return `<button class="dcell cell ${p==='skip'?'skip':''}" data-day="${i}" data-slot="${s.id}">
           <span class="lab who-${s.who}">${esc(s.label(db.names,i>=5))}${isVoteSlot(s.id) ? (peekVote(wk,i,s.id)?.lock ? ' 🔒' : ' 🗳️') : ''}</span>
-          ${m ? `<span>${m.em} ${esc(m.name)}</span>` : p==='skip' ? 'skip' : '<span class="muted">＋ choose</span>'}</button>`; }).join('')}</div></div>`).join('')}`;
+          ${m ? `<span class="drow">${mealPic(m, 'xs')}<span>${esc(m.name)}</span></span>` : p==='skip' ? 'skip' : '<span class="muted">＋ choose</span>'}</button>`; }).join('')}</div></div>`).join('')}`;
   } else {
   html += `<div class="week"><div></div>${DAYS.map((d,i)=>`<div class="hd ${i===ti?'today':''}">${d} ${dates[i].getDate()}<br><small>${DAYS_YO[i]}</small></div>`).join('')}`;
   for(const s of SLOTS){
@@ -400,7 +415,7 @@ function renderWeek(){
       if(i>=5 && s.weekdayOnly){ html += `<div class="cell na"></div>`; continue; }
       const p = getPick(wk,i,s.id), m = p && p!=='skip' && mealById(p);
       html += `<button class="cell ${p==='skip'?'skip':''}" data-day="${i}" data-slot="${s.id}">
-        ${m ? `<span class="em">${m.em}</span>${esc(m.name)}` : p==='skip' ? 'skip' : '<span class="muted">＋</span>'}${isVoteSlot(s.id) && peekVote(wk,i,s.id)?.lock ? ' 🔒' : ''}</button>`;
+        ${m ? `${mealPic(m, 'xs')}${esc(m.name)}` : p==='skip' ? 'skip' : '<span class="muted">＋</span>'}${isVoteSlot(s.id) && peekVote(wk,i,s.id)?.lock ? ' 🔒' : ''}</button>`;
     }
   }
   }
@@ -411,7 +426,7 @@ function renderWeek(){
   $('#fillWeek').onclick=()=>{ autofill(wk,[0,1,2,3,4,5,6]); render(); };
   $('#clearWeek').onclick=async()=>{
     const locked = Object.values(db.votes?.[wk] || {}).some(d => Object.values(d).some(s => s.lock));
-    if(locked ? await parentCheck('Clear the whole week') : confirm('Clear every meal this week?')){ delete db.plans[wk]; if(db.votes) delete db.votes[wk]; save(); }
+    if(await parentCheck('Clear the whole week')){ delete db.plans[wk]; if(db.votes) delete db.votes[wk]; save(); toast('🗑️ The week is cleared.'); }
     closePicker(); };
 }
 
@@ -457,13 +472,13 @@ function openPicker(wk, day, slotId){
     $('#sheet').querySelectorAll('.food').forEach(b=>b.onclick=()=>{ setPick(wk,day,slotId,b.dataset.m); closePicker(); });
     $('#skip').onclick=()=>{ setPick(wk,day,slotId,'skip'); closePicker(); };
     $('#close').onclick=closePicker;
-    if($('#clr')) $('#clr').onclick=()=>{ setPick(wk,day,slotId,null); closePicker(); };
+    if($('#clr')) $('#clr').onclick=async()=>{ if(await parentCheck('Clear this meal')){ setPick(wk,day,slotId,null); } closePicker(); };
     if($('#dOnly')) $('#dOnly').onclick=()=>{ showAll=!showAll; draw(); };
   };
   draw(); $('#scrim').classList.add('on');
 }
 function closePicker(){ $('#scrim').classList.remove('on'); render(); }
-$('#scrim').onclick = e => { if(e.target.id==='scrim') closePicker(); };
+$('#scrim').onclick = e => { if(e.target.id==='scrim' && !Alarm.active) closePicker(); };
 
 /* ---------- Shopping ---------- */
 // Shopping follows the week shown in "This week" (so Sunday-night planning for next week works).
@@ -690,13 +705,14 @@ function renderMeals(){
   const list = allMeals().filter(m => mealFilter==='all' || (mealFilter==='d'?m.d : mealFilter==='k'?m.k : mealFilter==='yor'?YORUBA_IDS.has(m.id) : m.cats.includes(mealFilter)));
   $('#main').innerHTML = `<h2>Meal library</h2>
     <div class="chips" style="margin-bottom:14px">${Object.entries(F).map(([k,v])=>`<button class="chip ${k===mealFilter?'on':''}" data-f="${k}">${v}</button>`).join('')}</div>
-    <div class="grid">${list.map(m=>`<div class="card"><div class="row"><span style="font-size:34px">${m.em}</span><h3 style="margin:0">${esc(m.name)}${yoName(m)?`<span class="yo">${esc(yoName(m))}</span>`:''}</h3></div>
+    <div class="grid">${list.map(m=>`<div class="card mealcard">${mealPic(m, 'hero')}<h3 style="margin:12px 0 0">${esc(m.name)}${yoName(m)?`<span class="yo">${esc(yoName(m))}</span>`:''}</h3>
       <div style="margin:8px 0">${m.d?'<span class="pill p-d">💚 sugar-friendly</span>':''}${m.k?'<span class="pill p-k">kids</span>':''}${m.p?'<span class="pill p-p">packs</span>':''}</div>
       ${m.tip?`<div class="tip">💚 ${esc(m.tip)}</div>`:''}
       ${m.ing.length?`<div class="muted" style="font-size:15px;margin-top:8px">${esc(m.ing.join(', '))}</div>`:''}
       <div class="row" style="margin-top:8px;font-size:15px"><span>≈ <b>${money(mealCost(m, db.home.kids+2))}</b> for the family</span>
         ${recipeOf(m)?`<a class="rlink" href="${recipeOf(m)}" target="_blank" rel="noopener">📖 Recipe</a>`:''}</div>
       ${m.custom?`<button class="btn warn" style="margin-top:10px;padding:8px 14px" data-del="${m.id}">Remove</button>`:''}</div>`).join('')}</div>
+    ${photoCreditsHtml()}
     <h2 style="margin-top:30px">Add a family meal</h2>
     <div class="card form">
       <input type="text" id="nName" placeholder="Meal name, e.g. Abacha">
@@ -777,8 +793,11 @@ familyInit();
 glucoseInit();
 hungryInit();
 updaterInit();
-// Refresh "today" after midnight on an always-on screen
-setInterval(()=>{ if(view==='today') render(); }, 10*60*1000);
+// Refresh "today" after midnight on an always-on screen, and whenever the tablet wakes
+setInterval(()=>{ if(view==='today') refreshSoon(); }, 60*1000);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) refreshSoon(); });
+addEventListener('focus', refreshSoon);
+addEventListener('pageshow', refreshSoon);
 /* ---------- Updates ---------- */
 let swReg = null, appVersion = '', updating = false;
 function showUpdate(worker){

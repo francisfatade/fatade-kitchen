@@ -13,7 +13,7 @@ let voteUI = {voter:null, approveBy:null, parentPick:false};
 function foodCardHtml(m, {cls = '', side = '', cost = null, tip = false, disabled = false} = {}){
   const yo = yoName(m);
   return `<button class="food ${cls}" data-m="${m.id}" ${disabled ? 'disabled' : ''}>
-    <span class="food-em">${m.em}</span>
+    ${mealPic(m, 'food-em')}
     <span class="food-txt">
       <span class="food-en">${esc(m.name)}</span>
       ${yo ? `<span class="food-yo">${esc(yo)}</span>` : ''}
@@ -67,7 +67,12 @@ function voteStatus(wk, day, slotId){
 function parentCheck(title){
   return new Promise(res => {
     const saved = Lock.get();
-    if(!saved){ res(confirm(`${title}\n\nNo Settings code is set yet, so anyone can do this. Set one in Settings to keep it grown-ups only.`)); return; }
+    if(!saved){
+      // Grown-up actions always need the code — set one first
+      res(false); $('#scrim').classList.remove('on');
+      toast('🔒 Set a Settings code first — Mummy or Daddy will need it for this.');
+      Lock.open = false; Lock.mode = 'create'; Lock.entry = ''; view = 'settings'; render(); return;
+    }
     let entry = '', err = '';
     const draw = () => {
       $('#sheet').innerHTML = `<div class="grabber"></div><div class="lock mini">
