@@ -132,6 +132,7 @@ nav small{font-weight:500;font-style:italic;opacity:.75;margin-left:2px}
 <script src="family.js"></script>
 <script src="glucose.js"></script>
 <script src="profiles.js"></script>
+<script src="hungry.js"></script>
 <script>
 /* ---------- Meal library ----------
    cats: breakfast | lunchbox | lunch | dinner | late
@@ -350,7 +351,7 @@ function renderToday(){
   const tWk = d===6 ? weekKey(1) : wk, tD = (d+1)%7;
   const prep = [...new Set(slotsFor(tD).map(s=>getPick(tWk,tD,s.id)).map(id=>id&&mealById(id)).filter(m=>m&&m.prep).map(m=>`${m.prep} — for ${m.name}`))];
   const late = getPick(wk,d,'meLate'), lateM = late && late!=='skip' && mealById(late);
-  $('#main').innerHTML = `${heroHtml()}${glucoseCardHtml()}
+  $('#main').innerHTML = `${heroHtml()}${glucoseCardHtml()}${hungryButtonHtml()}
     ${lateM ? `<div class="banner"><span class="big">🌙</span><div><h3>Late plate for ${esc(db.names.me)}</h3>
       ${lateM.em} <b>${esc(lateM.name)}</b> — set it aside before dinner is served.</div></div>` : ''}
     <div class="row"><h2>${DAYS_LONG[d]}'s meals <span class="yo-h">${DAYS_YO[d]} · Oúnjẹ òní</span></h2><span class="spacer"></span>
@@ -365,6 +366,7 @@ function renderToday(){
   $('#main').querySelectorAll('.slot').forEach(b=>b.onclick=e=>{ if(!e.target.closest('a')) openPicker(wk, +b.dataset.day, b.dataset.slot); });
   const f = $('#fillToday'); if(f) f.onclick = ()=>{ autofill(wk,[d]); render(); };
   const h = $('#heroAdd'); if(h) h.onclick = ()=>{ view='settings'; render(); };
+  $('#hungryBtn').onclick = () => hungryNow('button');
 }
 
 function renderWeek(){
@@ -527,7 +529,8 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 // Inside the installed Android app the browser speech APIs don't exist; the app provides its own (family.js NATIVE)
 const canVoice = NATIVE ? NATIVE.voiceAvailable() : !!SR;
 // English voices can't read tone marks, so spell the Yoruba phrases out phonetically
-const sayable = t => t.replace(/Ó dáa/g,'Oh dah').replace(/Ẹ nlẹ́/g,'Eh nleh');
+const sayable = t => t.replace(/Ó dáa/g,'Oh dah').replace(/Ẹ nlẹ́/g,'Eh nleh')
+  .replace(/Ebi ń pa mí o/g,'Eh-bee m pah mee oh').replace(/Ìyàwó/g,'Ee-yah-woh').replace(/ń bọ̀ wálé/g,'m baw wah-lay');
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 function splitItems(t){
   return t.replace(/\b(to|on|onto)\s+(the|my|our)?\s*(shopping\s+)?list\b/gi,'').replace(/\bplease\b/gi,'')
@@ -599,6 +602,7 @@ function handleCommand(raw){
     if(!all.length) return {say:'The list is empty. What should I add?'};
     return {say:`You have ${all.length} things to buy. ${listText(all.slice(0,12))}${all.length>12?', and more':''}. Anything else?`};
   }
+  if(/\bebi\b|\bhungry\b/.test(t)) return {say:'', end:true, action:'hungry'};
   if(/^(please\s+)?send\b|^(text|share)\b.*\blist\b/.test(t)) return {say:'Sending the shopping list to your phone.', end:true, action:'send'};
   if(/^clear\b.*(list|items|everything)/.test(t)){ db.extras[wk]=[]; save(); return {say:'I cleared the items you added. Anything else?'}; }
   let m;
@@ -645,6 +649,7 @@ const voice = {
     if(!final){ this.stop('I didn\'t hear anything, so I stopped listening. Tap the mic to try again.'); return; }
     const out = handleCommand(final);
     if(view==='shop') render();
+    if(out.action==='hungry'){ this.active=false; this.paint(); hungryNow('voice'); return; }
     if(out.action==='send'){ this.active=false; this.paint(); this.reply=out.say; this.paint(); sendList().then(m=>{ this.speak(m); toast(m); }); return; }
     if(out.end){ this.active=false; this.speak(out.say); this.paint(); }
     else this.speak(out.say, () => this.listen());
@@ -720,6 +725,7 @@ function renderSettings(){
       <div><button class="btn" id="sSave">Save</button></div>
     </div>
     ${lockSettingsHtml()}
+    ${hungrySettingsHtml()}
     ${profileSettingsHtml()}
     ${glucoseSettingsHtml()}
     ${displaySettingsHtml()}
@@ -748,6 +754,7 @@ function renderSettings(){
   bindDisplaySettings();
   bindGlucoseSettings();
   bindLockSettings();
+  bindHungrySettings();
   bindProfileSettings();
   $('#testSend').onclick=async()=>{
     try{ const r = await fetch('https://ntfy.sh/', {method:'POST', headers:{'Content-Type':'application/json'},
@@ -765,6 +772,7 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme
 render();
 familyInit();
 glucoseInit();
+hungryInit();
 // Refresh "today" after midnight on an always-on screen
 setInterval(()=>{ if(view==='today') render(); }, 10*60*1000);
 /* ---------- Updates ---------- */
