@@ -7,7 +7,8 @@ const VOTE_SLOTS = ['kidsBf', 'kidsBox'];
 const isVoteSlot = id => VOTE_SLOTS.includes(id);
 const voteState = (wk, day, slot) => ((((db.votes ||= {})[wk] ||= {})[day] ||= {})[slot] ||= {opts:[], v:{}, lock:null});
 const peekVote = (wk, day, slot) => db.votes?.[wk]?.[day]?.[slot] || null;
-let voteUI = {voter:null, approveBy:null, parentPick:false};
+const freshVoteUI = () => ({voter:null, approveBy:null, browse:false, trusted:false, peek:null});
+let voteUI = freshVoteUI();
 
 /* ---------- Food card: English first, Yoruba underneath ---------- */
 function foodCardHtml(m, {cls = '', side = '', cost = null, tip = false, disabled = false} = {}){
@@ -64,11 +65,13 @@ function voteStatus(wk, day, slotId){
 }
 
 /* ---------- Grown-up check (Settings code) ---------- */
-function parentCheck(title){
+// soft: choosing meals carries on when no code is set; clearing meals never does
+function parentCheck(title, {soft = false} = {}){
   return new Promise(res => {
     const saved = Lock.get();
+    if(!saved && soft) return res(true);
     if(!saved){
-      // Grown-up actions always need the code — set one first
+      // Clearing always needs the code — set one first
       res(false); $('#scrim').classList.remove('on');
       toast('🔒 Set a Settings code first — Mummy or Daddy will need it for this.');
       Lock.open = false; Lock.mode = 'create'; Lock.entry = ''; view = 'settings'; render(); return;
@@ -93,72 +96,85 @@ function parentCheck(title){
       });
       $('#pcCancel').onclick = () => res(false);
     };
+    $('#sheet').classList.remove('tall');
     draw(); $('#scrim').classList.add('on');
   });
 }
 
-/* ---------- The vote sheet ---------- */
+/* ---------- The kids' meal sheet ----------
+   Two tabs: All meals (grown-ups scroll everything and pick; opens from the meal
+   slots) and Kids' vote (3 choices; opens from the Kids' vote card). */
+function startVote(wk, day, slotId, browse = false){
+  voteUI = {...freshVoteUI(), browse: browse && !peekVote(wk, day, slotId)?.lock};
+  openVote(wk, day, slotId);
+}
 function openVote(wk, day, slotId){
-  const st = voteState(wk, day, slotId), q = voteQuestion(wk, day, slotId), kids = kidProfiles();
-  const opts = voteUI.parentPick ? candidates(SLOTS.find(s => s.id === slotId), false).filter(m => m.k) : voteOptions(wk, day, slotId);
+  const slot = SLOTS.find(s => s.id === slotId), st = voteState(wk, day, slotId), q = voteQuestion(wk, day, slotId), kids = kidProfiles();
+  const browse = voteUI.browse, allMeals_ = candidates(slot, false);
+  const opts = browse ? allMeals_ : voteOptions(wk, day, slotId);
   const counts = voteCounts(st), byId = id => profiles().find(p => p.id === id);
-  const lockedMeal = st.lock && mealById(st.lock.meal);
+  const lockedMeal = !browse && st.lock && mealById(st.lock.meal);
   const voterName = voteUI.voter && byId(voteUI.voter)?.name;
-  const hint = st.lock ? '' : voteUI.parentPick ? 'Grown-ups: tap any food to choose it and lock it.'
+  const hint = lockedMeal ? '' : browse ? 'Scroll the list, tap a meal to see it, then choose it.'
     : voteUI.approveBy ? `${voteUI.approveBy}, tap the food you approve.`
-    : voterName ? `${voterName}, tap the food you want.` : 'First, tap your name 👇';
-  // The food shown big: the one just tapped, else this child's vote, else the first choice
-  const peekMeal = mealById(voteUI.peek && opts.some(m => m.id === voteUI.peek) ? voteUI.peek
-    : (voteUI.voter && st.v[voteUI.voter]) || opts[0]?.id || '');
-  const peekAction = !peekMeal || st.lock ? '' : voteUI.parentPick ? '🔒 Choose this meal'
-    : voteUI.approveBy ? `✓ ${voteUI.approveBy} approves this` : voterName ? `🗳️ ${voterName} votes for this` : '';
+    : voterName ? `${voterName}, tap the food you want.` : 'Tap your name, then your food. 2 matching votes lock it. 🔒';
+  // The food shown big: the one just tapped, else the planned meal / this child's vote, else the first
+  const cur = getPick(wk, day, slotId);
+  const peekId = [voteUI.peek, browse ? cur : voteUI.voter && st.v[voteUI.voter], opts[0]?.id].find(id => id && opts.some(m => m.id === id));
+  const peekMeal = peekId && mealById(peekId);
+  const peekAction = !peekMeal || lockedMeal ? '' : browse ? '✓ Choose this meal'
+    : voteUI.approveBy ? `✓ ${voteUI.approveBy} approves this` : voterName ? `🗳️ ${voterName} votes for this` : '👆 Tap your name to vote';
+  const keepScroll = $('#sheet .vopts')?.scrollTop || 0;
 
   $('#sheet').innerHTML = `<div class="grabber"></div>
     <div class="vote-head">
-      <div class="vote-kicker">🗳️ Kids' vote · <i>Ìbò àwọn ọmọ</i></div>
+      <div class="vote-kicker">${browse ? `${esc(DAYS_LONG[day])} · <i>${DAYS_YO[day]}</i>` : `🗳️ Kids' vote · <i>Ìbò àwọn ọmọ</i>`}</div>
       <h2>${esc(q.en)}</h2><div class="vote-yo">${esc(q.yo)}</div>
-      ${st.lock ? '' : `<div class="vote-rule">Two votes for the same food — or Mummy's okay — locks it in. 🔒</div>`}
+      ${lockedMeal ? '' : `<div class="seg vote-tabs">
+        <button class="${browse ? 'on' : ''}" id="tabAll">📋 All meals (${allMeals_.length})</button>
+        <button class="${browse ? '' : 'on'}" id="tabVote">🗳️ Kids' vote</button></div>`}
     </div>
     ${lockedMeal ? `<div class="vote-locked">
         <div class="vl-badge">🔒 Locked</div>
         <div class="pv locked-pv">${bigPreviewHtml(lockedMeal)}</div>
         <div class="vl-by">Chosen by ${esc(st.lock.by)}. Only Mummy or Daddy can change it now.</div>
       </div>` : `
-      ${voteUI.parentPick || voteUI.approveBy ? '' : `<div class="voters">${kids.map(k => `<button class="voter ${k.id === voteUI.voter ? 'on' : ''}" data-kid="${k.id}">
+      ${browse || voteUI.approveBy ? '' : `<div class="voters">${kids.map(k => `<button class="voter ${k.id === voteUI.voter ? 'on' : ''}" data-kid="${k.id}">
           <span class="pav" style="background:${k.color}">${esc(initials(k.name))}</span><span class="vname">${esc(k.name)}</span>
           ${st.v[k.id] ? '<span class="vdone">✓ voted</span>' : '<span class="vdone">&nbsp;</span>'}</button>`).join('')}</div>`}
       <div class="vote-hint">${esc(hint)}</div>
       <div class="pick-layout vote-layout"><div class="pv">${bigPreviewHtml(peekMeal, {action: peekAction, actionId: 'vGo'})}</div>
-      <div class="vopts ${voteUI.parentPick ? 'many pick-list' : ''}">${opts.map(m => {
+      <div class="vopts ${browse ? 'many pick-list' : ''}">${opts.map(m => {
         const who = Object.entries(st.v).filter(([, id]) => id === m.id).map(([kid]) => byId(kid)).filter(Boolean);
-        const side = voteUI.parentPick ? '' : `<span class="vfaces">${who.map(p => `<span class="pav xs" style="background:${p.color}" title="${esc(p.name)}">${esc(initials(p.name))}</span>`).join('')}
+        const side = browse ? '' : `<span class="vfaces">${who.map(p => `<span class="pav xs" style="background:${p.color}" title="${esc(p.name)}">${esc(initials(p.name))}</span>`).join('')}
           <span class="vcount">${counts[m.id] || 0}/2</span></span>`;
-        return foodCardHtml(m, {cls: (peekMeal && peekMeal.id === m.id ? 'mine ' : '') + (voteUI.approveBy ? 'approve' : ''), side});
+        return foodCardHtml(m, {cls: (peekMeal && peekMeal.id === m.id ? 'mine ' : '') + (voteUI.approveBy ? 'approve' : ''), side, cost: browse ? mealCost(m, servingsFor(slot)) : null});
       }).join('')}</div></div>`}
     <div class="grownups">
-      <span class="gu-label">Grown-ups</span>
-      ${st.lock
-        ? `<button class="btn tinted" id="vUnlock">Unlock for a new vote</button><button class="btn tinted" id="vChange">Pick a different meal</button>`
-        : voteUI.parentPick || voteUI.approveBy ? `<button class="btn ghost" id="vBack">Back to voting</button>`
-        : `<button class="btn" id="vMummy">✓ ${esc(db.names.wife)} approves…</button><button class="btn tinted" id="vDaddy">${esc(db.names.me)} chooses…</button><button class="btn ghost" id="vNew">New choices</button>`}
+      ${lockedMeal ? `<button class="btn tinted" id="vUnlock">Unlock for a new vote</button><button class="btn tinted" id="vChange">Pick a different meal</button>`
+        : browse ? '' : voteUI.approveBy ? `<button class="btn ghost" id="vBack">Back to voting</button>`
+        : `<button class="btn" id="vMummy">✓ ${esc(db.names.wife)} approves…</button><button class="btn ghost" id="vNew">New choices</button>`}
       <span class="spacer"></span><button class="btn ghost" id="vClose">Done</button>
     </div>`;
+  const list = $('#sheet .vopts'); if(list) list.scrollTop = keepScroll;
 
   const S = $('#sheet'), reopen = () => openVote(wk, day, slotId);
   S.querySelectorAll('[data-kid]').forEach(b => b.onclick = () => { voteUI.voter = b.dataset.kid; reopen(); });
-  // Tap a card = show it big; tap it again (or the big button) = vote / approve / choose
+  // Tap a card = show it big; tap it again (or the big button) = choose / vote / approve
   S.querySelectorAll('.vopts .food').forEach(b => b.onclick = () => {
-    if(peekMeal && b.dataset.m === peekMeal.id && peekAction) return act(b.dataset.m);
+    if(peekMeal && b.dataset.m === peekMeal.id) return act(b.dataset.m);
     voteUI.peek = b.dataset.m; reopen();
-    if(matchMedia('(orientation: portrait)').matches) S.querySelector('.vote-hint')?.scrollIntoView({behavior: 'smooth', block: 'start'});
   });
   const go = $('#vGo'); if(go) go.onclick = () => act(peekMeal.id);
-  function act(id){
-    voteUI.peek = null;
-    if(voteUI.parentPick){ lockVote(wk, day, slotId, id, `${db.names.wife} & ${db.names.me}`); voteUI = {voter:null, approveBy:null, parentPick:false}; celebrate(mealById(id), 'Grown-ups chose'); return reopen(); }
-    if(voteUI.approveBy){ lockVote(wk, day, slotId, id, voteUI.approveBy); const by = voteUI.approveBy; voteUI = {voter:null, approveBy:null, parentPick:false}; celebrate(mealById(id), `${by} approved`); return reopen(); }
-    if(!voteUI.voter){ toast('Tap your name first 👆'); return reopen(); }
-    st.v[voteUI.voter] = id; save();
+  async function act(id){
+    if(browse){   // grown-ups' choice: saved and locked
+      if(!voteUI.trusted && !await parentCheck('Choose this meal', {soft: true})) return reopen();
+      lockVote(wk, day, slotId, id, `${db.names.wife} & ${db.names.me}`);
+      voteUI = freshVoteUI(); toast(`✓ ${mealById(id).name} is set for ${DAYS_LONG[day]}.`); return closePicker();
+    }
+    if(voteUI.approveBy){ lockVote(wk, day, slotId, id, voteUI.approveBy); const by = voteUI.approveBy; voteUI = freshVoteUI(); celebrate(mealById(id), `${by} approved`); return reopen(); }
+    if(!voteUI.voter){ toast('Tap your name first 👆'); const v = S.querySelector('.voters'); v?.classList.remove('nudge'); void v?.offsetWidth; v?.classList.add('nudge'); return; }
+    voteUI.peek = null; st.v[voteUI.voter] = id; save();
     const c = voteCounts(st);
     if(c[id] >= 2){
       const names = Object.entries(st.v).filter(([, m]) => m === id).map(([k]) => byId(k)?.name).filter(Boolean);
@@ -167,13 +183,14 @@ function openVote(wk, day, slotId){
     reopen();
   }
   const on = (id, f) => { const el = $('#' + id); if(el) el.onclick = f; };
-  on('vClose', () => { voteUI = {voter:null, approveBy:null, parentPick:false}; closePicker(); });
-  on('vBack', () => { voteUI = {voter:null, approveBy:null, parentPick:false}; reopen(); });
-  on('vMummy', async () => { if(await parentCheck(`${db.names.wife} approves`)){ voteUI = {voter:null, approveBy:db.names.wife, parentPick:false}; } reopen(); });
-  on('vDaddy', async () => { if(await parentCheck('Choose a meal')){ voteUI = {voter:null, approveBy:null, parentPick:true}; } reopen(); });
-  on('vNew', async () => { if(await parentCheck('New choices')){ st.opts = []; st.v = {}; save(); } reopen(); });
-  on('vUnlock', async () => { if(await parentCheck('Unlock this meal')){ st.lock = null; st.v = {}; save(); toast('Unlocked — the kids can vote again.'); } reopen(); });
-  on('vChange', async () => { if(await parentCheck('Change this meal')){ st.lock = null; voteUI = {voter:null, approveBy:null, parentPick:true}; save(); } reopen(); });
+  on('tabAll', () => { voteUI = {...freshVoteUI(), browse: true}; reopen(); });
+  on('tabVote', () => { voteUI = freshVoteUI(); reopen(); });
+  on('vClose', () => { voteUI = freshVoteUI(); closePicker(); });
+  on('vBack', () => { voteUI = freshVoteUI(); reopen(); });
+  on('vMummy', async () => { if(await parentCheck(`${db.names.wife} approves`, {soft: true})){ voteUI = {...freshVoteUI(), approveBy: db.names.wife}; } reopen(); });
+  on('vNew', async () => { if(await parentCheck('New choices', {soft: true})){ st.opts = []; st.v = {}; save(); } reopen(); });
+  on('vUnlock', async () => { if(await parentCheck('Unlock this meal', {soft: true})){ st.lock = null; st.v = {}; save(); toast('Unlocked — the kids can vote again.'); } reopen(); });
+  on('vChange', async () => { if(await parentCheck('Change this meal', {soft: true})){ voteUI = {...freshVoteUI(), browse: true, trusted: true}; } reopen(); });
   $('#sheet').classList.add('tall');
   $('#scrim').classList.add('on');
 }
@@ -202,5 +219,5 @@ function voteTodayHtml(){
         <span class="vc-st">${esc(vs.txt)}</span></button>`; }).join('')}</div></div>`;
 }
 function bindVoteToday(){
-  document.querySelectorAll('[data-vslot]').forEach(b => b.onclick = () => openVote(b.dataset.vwk, +b.dataset.vday, b.dataset.vslot));
+  document.querySelectorAll('[data-vslot]').forEach(b => b.onclick = () => startVote(b.dataset.vwk, +b.dataset.vday, b.dataset.vslot));
 }

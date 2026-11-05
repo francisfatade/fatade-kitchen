@@ -109,6 +109,7 @@ async function hungryNow(source){
       ${c.snooze ? `<button class="btn ghost hg-snooze" id="hgSnooze">😴 Snooze ${c.snooze} min</button>` : ''}
       <div class="hg-rule">${c.speak ? (c.repeat === 'repeat' ? `Keeps playing until someone taps “Ó dáa”${c.stopAfter ? ` · stops after ${c.stopAfter} min` : ''}.` : 'Plays once.') : ''}</div>
     </div>`;
+  $('#sheet').classList.remove('tall');
   $('#scrim').classList.add('on');
   Alarm.start(c, {dinner, late, me});
   $('#hgOk').onclick = () => { Alarm.stop(); closePicker(); toast('👍 Ó dáa! Dinner is on its way.'); };

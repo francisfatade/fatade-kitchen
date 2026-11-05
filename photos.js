@@ -66,6 +66,22 @@ const PHOTO_LIST = {
   'chicken-suya':['Suya chicken meat.jpg','MOIBARDE','CC BY-SA 4.0'],
   'afang-soup':['Soup (Afang) and swallow (fufu). (Nigerian cuisine).jpg','Beendy234','CC BY-SA 4.0'],
   'groundnut-soup':['Banku and groundnut soup.jpg','Kwameghana','CC BY-SA 4.0'],
+  'db-oatmeal':['Blueberry oatmeal.jpg','Shisma','CC BY 4.0'],
+  'db-avocado-toast':['Smashed avocado & poached eggs - M&S Café 2023-12-28.jpg','Andy Li','CC0'],
+  'db-parfait':['Child Care Recipes (Team Nutiriton) (20211231-FNS-UNC-0031).jpg','USDAgov','Public domain'],
+  'db-veggie-omelet':['Omlette-fold.jpg','Masoud Shafaee','CC BY-SA 3.0'],
+  'db-green-smoothie':['Green Smoothie.jpg','Annapowell','CC BY-SA 4.0'],
+  'db-cottage-bowl':['Child Care Recipes (Team Nutiriton) (20230123-FNS-UNK-002).jpg','USDAgov','Public domain'],
+  'db-chia-pudding':['Chia Pudding.PNG','Sarahchoe','CC BY-SA 4.0'],
+  'db-pancakes':['Oatmeal pancake with fruit.jpg','Drhnn','CC BY 4.0'],
+  'db-tofu-scramble':['Tofu Scramble in New Orleans.jpg','Bart Everson','CC BY 2.0'],
+  'db-overnight-oats':['Protein overnight oats.jpg','Nervy8924','CC BY-SA 4.0'],
+  'db-smoothie-bowl':['Smoothie bowl.jpg','Marife.altabano','CC BY-SA 4.0'],
+  'db-nut-muffin':['Peanut butter and marmalade on toasted English muffins - Massachusetts.jpg','Daderot','CC0'],
+  'db-egg-plate':['Boiled Eggs and Tomato slices meal.jpg','MmaBaggio','CC BY-SA 4.0'],
+  'db-fruit-nut-bowl':['Healthy Breakfast - Homamade - Assam - DSC 003.jpg','Gitika Gayan','CC BY-SA 4.0'],
+  'db-turkey-wrap':['Turkey wrap from Spangles restaurant.jpg','Ser Amantio di Nicolao','CC BY-SA 4.0'],
+  'db-apple-yogurt':['Yoghurt met appelmoes en walnoten 2025.jpg','JopkeB','CC BY-SA 4.0'],
 };
 const MEAL_PHOTOS = Object.fromEntries(Object.entries(PHOTO_LIST).map(([id, [file, author, license]]) =>
   [id, {file, author, license, page: 'https://commons.wikimedia.org/wiki/File:' + encodeURIComponent(file.replace(/ /g, '_'))}]));
@@ -83,15 +99,15 @@ function mealPic(m, cls = ''){
 /* Large preview shown while choosing a meal (picker and kids' vote) */
 function bigPreviewHtml(m, {cost = null, tip = false, action = '', actionId = 'pvGo', extra = ''} = {}){
   if(!m) return `<div class="pv-empty">Tap a meal to see it big 👀</div>`;
-  const u = photoUrl(m, 1000), yo = yoName(m), recipe = recipeOf(m);
-  return `<div class="pv-photo ${u ? '' : 'noimg'}">
+  const u = photoUrl(m, 1000), yo = yoName(m);
+  return `<div class="pv-photo ${u ? '' : 'noimg'}" data-howto="${m.id}">
       <span class="pv-em">${m.em}</span>
       ${u ? `<img src="${u}" alt="${esc(m.name)}" decoding="async" onerror="this.parentNode.classList.add('noimg');this.remove()">` : ''}
       <div class="pv-cap"><div class="pv-en">${esc(m.name)}</div>${yo ? `<div class="pv-yo">${esc(yo)}</div>` : ''}</div>
     </div>
     <div class="pv-info">
       <div class="food-tags">${m.k ? '<span class="tag t-k">Kids love it</span>' : ''}${m.d ? '<span class="tag t-d">Sugar-friendly</span>' : ''}${m.p ? '<span class="tag t-p">Packs well</span>' : ''}${cost !== null ? `<span class="tag t-c">≈ ${money(cost)}</span>` : ''}
-        ${recipe ? `<a class="rlink" href="${recipe}" target="_blank" rel="noopener">📖 Recipe</a>` : ''}</div>
+        <span class="rlink" data-howto="${m.id}">📖 Recipe & video</span></div>
       ${tip && m.tip ? `<div class="pv-tip">💚 ${esc(m.tip)}</div>` : ''}
       ${extra}
       ${action ? `<button class="btn pv-go" id="${actionId}">${action}</button>` : ''}

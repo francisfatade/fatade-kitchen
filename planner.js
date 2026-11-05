@@ -8,7 +8,8 @@ const CARB_WEIGHT = {
   'Rice':1, 'Ofada rice':.8, 'Brown rice':.6, 'Yam':1, 'Water yam':1, 'Yam flour (elubo)':1, 'Swallow of choice':.8,
   'Starch / swallow':1, 'Bread':1, 'Spaghetti':1, 'Noodles':1, 'Flour':1, 'Pap (ogi)':1, 'Sugar':1, 'Custard powder':1,
   'Potatoes':1, 'Ripe plantain':1, 'Tortilla wraps':.8, 'Juice':1, 'Sweet potato':.6, 'Unripe plantain':.5,
-  'Okpa flour':.5, 'Rolled oats':.4, 'Beans':.4, 'Beans (peeled)':.4,
+  'Okpa flour':.5, 'Rolled oats':.4, 'Steel-cut oats':.3, 'Beans':.4, 'Beans (peeled)':.4,
+  'Whole grain bread':.6, 'Whole grain wrap':.6, 'Whole grain English muffin':.6, 'Bananas':.6, 'Pineapple':.5, 'Apples':.3, 'Mixed berries':.2,
 };
 const carbScore = m => m.ing.reduce((t, g) => t + (CARB_WEIGHT[g] || 0), 0);
 
@@ -112,6 +113,7 @@ const Planner = {
       <div class="pl-btns">
         <button class="pl-b no" id="plNo" aria-label="Next idea">✕</button>
         <button class="pl-b skip" id="plSkip">Skip</button>
+        ${m ? `<button class="pl-b skip" data-howto="${m.id}">📖 Recipe</button>` : ''}
         <button class="pl-b yes" id="plYes" aria-label="Plan it">✓</button>
       </div>
       <div class="pl-hint">Swipe right to plan it · left for another idea · ${this.i + 1} of ${this.steps.length}</div>`;

@@ -92,6 +92,42 @@ const YORUBA_MEALS = [
 ];
 YO_NAMES['egusi-swallow'] = 'Ẹ̀fọ́ elégúsí';
 
+/* The family's "Diabetic Breakfast" poster (set:'db' gives them their own filter on Meals & Recipes) */
+const POSTER_BREAKFASTS = [
+  {id:'db-oatmeal', name:'Oatmeal Delight', em:'🥣', cats:['breakfast'], k:1,d:1,p:0,set:'db',
+   ing:['Steel-cut oats','Mixed berries','Chia seeds','Mixed nuts'], tip:'Steel-cut, no added sugar. About 1 cup cooked.'},
+  {id:'db-avocado-toast', name:'Avocado Toast with Egg', em:'🥑', cats:['breakfast'], k:1,d:1,p:0,set:'db',
+   ing:['Whole grain bread','Avocado','Eggs','Cherry tomatoes'], tip:'One slice of whole grain toast is the portion.'},
+  {id:'db-parfait', name:'Greek Yogurt Parfait', em:'🍓', cats:['breakfast'], k:1,d:1,p:1,set:'db',
+   ing:['Low-fat Greek yogurt','Mixed berries','Mixed nuts','Flaxseeds'], tip:'Plain yogurt only — flavoured ones carry a lot of sugar.'},
+  {id:'db-veggie-omelet', name:'Egg White Veggie Omelet', em:'🍳', cats:['breakfast'], k:0,d:1,p:1,set:'db',
+   ing:['Eggs','Spinach','Green peppers','Mushrooms'], tip:'Almost no carbs — a very steady breakfast.'},
+  {id:'db-green-smoothie', name:'Green Smoothie', em:'🥤', cats:['breakfast'], k:0,d:1,p:1,set:'db',
+   ing:['Spinach','Cucumber','Protein powder','Almond milk','Flaxseeds'], tip:'Use an unsweetened protein powder and almond milk.'},
+  {id:'db-cottage-bowl', name:'Cottage Cheese Bowl', em:'🍍', cats:['breakfast'], k:0,d:1,p:1,set:'db',
+   ing:['Low-fat cottage cheese','Pineapple','Walnuts'], tip:'Pineapple is sweet: keep it to a few small pieces.'},
+  {id:'db-chia-pudding', name:'Chocolate Chia Pudding', em:'🍫', cats:['breakfast'], k:1,d:1,p:1,set:'db',
+   ing:['Chia seeds','Almond milk','Cocoa powder','Mixed berries'], prep:'Soak the chia pudding tonight', tip:'Unsweetened cocoa and almond milk keep it low in sugar.'},
+  {id:'db-pancakes', name:'Whole Grain Oat Pancakes', em:'🥞', cats:['breakfast'], k:1,d:1,p:0,set:'db',
+   ing:['Rolled oats','Eggs','Bananas','Blueberries'], tip:'Two small pancakes, half a banana, no syrup.'},
+  {id:'db-tofu-scramble', name:'Tofu Scramble on Toast', em:'🍲', cats:['breakfast','lunch'], k:0,d:1,p:1,set:'db',
+   ing:['Firm tofu','Green peppers','Spinach','Turmeric','Whole grain bread'], tip:'High protein. One slice of toast is enough.'},
+  {id:'db-overnight-oats', name:'Overnight Oats', em:'🫙', cats:['breakfast'], k:1,d:1,p:1,set:'db',
+   ing:['Rolled oats','Almond milk','Mixed berries','Mixed nuts','Cinnamon'], prep:'Make the overnight oats tonight', tip:'Good to grab for work. Half a cup of dry oats.'},
+  {id:'db-smoothie-bowl', name:'Berry Smoothie Bowl', em:'🫐', cats:['breakfast'], k:1,d:1,p:0,set:'db',
+   ing:['Mixed berries','Low-fat Greek yogurt','Chia seeds','Flaxseeds'], tip:'Eat it slowly with a spoon; the yogurt and seeds slow the sugar.'},
+  {id:'db-nut-muffin', name:'Nut Butter English Muffin', em:'🥜', cats:['breakfast'], k:1,d:1,p:1,set:'db',
+   ing:['Whole grain English muffin','Almond butter','Strawberries'], tip:'Unsweetened almond butter, 1 tablespoon per half.'},
+  {id:'db-egg-plate', name:'Egg & Veggie Plate', em:'🥚', cats:['breakfast','late'], k:0,d:1,p:1,set:'db',
+   ing:['Eggs','Cucumber','Cherry tomatoes','Hummus'], tip:'Very low carb, and quick if eggs are boiled ahead.'},
+  {id:'db-fruit-nut-bowl', name:'Fruit & Nut Bowl', em:'🍎', cats:['breakfast'], k:1,d:1,p:1,set:'db',
+   ing:['Mixed berries','Apples','Almonds'], tip:'Keep it to one small bowl; the nuts slow the fruit sugar.'},
+  {id:'db-turkey-wrap', name:'Turkey Breakfast Wrap', em:'🌯', cats:['breakfast','lunch'], k:1,d:1,p:1,set:'db',
+   ing:['Whole grain wrap','Sliced turkey','Spinach','Hummus'], tip:'One wrap, low-sodium turkey. Good for the road.'},
+  {id:'db-apple-yogurt', name:'Cinnamon Apple Yogurt', em:'🍏', cats:['breakfast'], k:1,d:1,p:1,set:'db',
+   ing:['Low-fat Greek yogurt','Apples','Cinnamon','Walnuts'], tip:'Half an apple is plenty. No honey.'},
+];
+
 const WEB_MEALS = [
   {id:'garden-egg-stew', name:'Garden egg stew & boiled unripe plantain', em:'🍆', cats:['breakfast','lunch'], k:0,d:1,p:1,
    ing:['Garden eggs','Eggs','Tomatoes','Tatashe','Onions','Palm oil','Crayfish','Unripe plantain'], tip:'Low-carb sauce — keep to 1 finger of green plantain.', recipe:'https://lowcarbafrica.com/garden-egg-stew/'},

@@ -118,7 +118,7 @@ nav small{font-weight:500;font-style:italic;opacity:.75;margin-left:2px}
   <button data-v="today" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.2 12 3.5l8.5 6.7V19a1.5 1.5 0 0 1-1.5 1.5h-4.5v-6h-5v6H5A1.5 1.5 0 0 1 3.5 19z"/></svg>Today</button>
   <button data-v="week"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Week</button>
   <button data-v="shop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2.4l2.3 11.2a1.5 1.5 0 0 0 1.5 1.2h8.4a1.5 1.5 0 0 0 1.5-1.1L21 8H6.2"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17.5" cy="20" r="1.3"/></svg>Shopping</button>
-  <button data-v="meals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12h17a8.5 8.5 0 0 1-17 0zM8 8.5c0-1.5 1-1.5 1-3M12 8.5c0-1.5 1-1.5 1-3M16 8.5c0-1.5 1-1.5 1-3"/></svg>Meals</button>
+  <button data-v="meals"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12h17a8.5 8.5 0 0 1-17 0zM8 8.5c0-1.5 1-1.5 1-3M12 8.5c0-1.5 1-1.5 1-3M16 8.5c0-1.5 1-1.5 1-3"/></svg>Meals & Recipes</button>
   <button data-v="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></svg>Settings</button>
 </nav>
 <div class="updatebar" id="appBar"><span id="appBarMsg"></span><button class="btn" id="appBarBtn">Install</button></div>
@@ -137,6 +137,9 @@ nav small{font-weight:500;font-style:italic;opacity:.75;margin-left:2px}
 <script src="votes.js"></script>
 <script src="updater.js"></script>
 <script src="planner.js"></script>
+<script src="howto.js"></script>
+<script src="videos.js"></script>
+<script src="recipeview.js"></script>
 <script>
 /* ---------- Meal library ----------
    cats: breakfast | lunchbox | lunch | dinner | late
@@ -291,7 +294,7 @@ db.extras ||= {};
 /* ---------- Helpers ---------- */
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const allMeals = () => BASE_MEALS.concat(YORUBA_MEALS, WEB_MEALS, db.custom);
+const allMeals = () => BASE_MEALS.concat(YORUBA_MEALS, WEB_MEALS, POSTER_BREAKFASTS, db.custom);
 const mealById = id => allMeals().find(m => m.id === id);
 const recipeOf = m => m.recipe || RECIPES[m.id];
 const money = n => '$' + n.toFixed(2);
@@ -338,7 +341,7 @@ function fmtDate(d){ return d.toLocaleDateString(undefined,{weekday:'long', day:
 let view = 'today';
 function render(){
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on', b.dataset.v===view));
-  const T = {today:['Today','Òní'], week:['This Week','Ọ̀sẹ̀ yìí'], shop:['Shopping','Ọjà'], meals:['Meals','Oúnjẹ'], settings:['Settings','Ètò']}[view];
+  const T = {today:['Today','Òní'], week:['This Week','Ọ̀sẹ̀ yìí'], shop:['Shopping','Ọjà'], meals:['Meals & Recipes','Oúnjẹ'], settings:['Settings','Ètò']}[view];
   $('#hdrDate').textContent = `${fmtDate(new Date())} · ${view==='today' ? profileGreeting() : DAYS_YO[todayIdx()]}`;
   $('#hdrTitle').innerHTML = `${T[0]}<small>${T[1]}</small>`;
   rendering = true;
@@ -353,7 +356,7 @@ function slotCard(wk, day, slot){
   const tip = m && (slot.who==='me' || slot.who==='family') && m.tip ? `<div class="tip">💚 ${esc(m.tip)}</div>` : '';
   const warn = m && slot.who==='family' && !m.d ? `<div><span class="pill p-x">${esc(db.names.me)}: use the swap tip</span></div>` : '';
   const meta = m ? `<span class="row muted" style="font-size:15px">≈ ${money(mealCost(m, servingsFor(slot)))}
-    ${recipeOf(m) ? `<a class="rlink" href="${recipeOf(m)}" target="_blank" rel="noopener">📖 Recipe</a>` : ''}</span>` : '';
+    <span class="rlink" data-howto="${m.id}">📖 Recipe</span></span>` : '';
   return `<button class="slot ${m?'':'empty'}" data-day="${day}" data-slot="${slot.id}">
     <span class="who who-${slot.who}">${esc(slot.label(db.names, we))} <span class="yo-w">· ${slot.yo}</span></span>
     <span class="meal">${m?`${mealPic(m, 'em')}<span>${esc(m.name)}${yoName(m)?`<span class="yo">${esc(yoName(m))}</span>`:''}</span>`: pick==='skip' ? 'Skipping' : '＋ Tap to choose'}</span>
@@ -458,7 +461,7 @@ function autofill(wk, days){
 }
 
 function openPicker(wk, day, slotId){
-  if(isVoteSlot(slotId)) return openVote(wk, day, slotId);   // kids' meals are chosen by vote (votes.js)
+  if(isVoteSlot(slotId)) return startVote(wk, day, slotId, true);   // kids' meals: All meals + Kids' vote tabs (votes.js)
   const slot = SLOTS.find(s=>s.id===slotId), cur = getPick(wk,day,slotId);
   let showAll = false, sel = cur && cur !== 'skip' ? cur : null;
   // Big photo of the meal being looked at; tap a card to preview it, tap again (or the button) to choose
@@ -488,7 +491,6 @@ function openPicker(wk, day, slotId){
     $('#sheet').querySelectorAll('.food').forEach(b=>b.onclick=()=>{
       if(b.dataset.m === sel){ setPick(wk,day,slotId,sel); closePicker(); return; }   // second tap chooses
       sel = b.dataset.m; drawPreview();
-      if(matchMedia('(orientation: portrait)').matches) $('#sheet').scrollTo({top: 0, behavior: 'smooth'});
     });
     drawPreview();
     $('#skip').onclick=()=>{ setPick(wk,day,slotId,'skip'); closePicker(); };
@@ -722,16 +724,18 @@ const voice = {
 
 let mealFilter = 'all';
 function renderMeals(){
-  const F = {all:'All', yor:'Yorùbá', d:'💚 Sugar-friendly', k:'Kids love', breakfast:'Breakfast', lunchbox:'Lunchbox', lunch:'Lunch pack', dinner:'Dinner', late:'Late plate'};
-  const list = allMeals().filter(m => mealFilter==='all' || (mealFilter==='d'?m.d : mealFilter==='k'?m.k : mealFilter==='yor'?YORUBA_IDS.has(m.id) : m.cats.includes(mealFilter)));
+  const F = {all:'All', db:'🌅 Diabetic breakfast', yor:'Yorùbá', d:'💚 Sugar-friendly', k:'Kids love', breakfast:'Breakfast', lunchbox:'Lunchbox', lunch:'Lunch pack', dinner:'Dinner', late:'Late plate'};
+  const list = allMeals().filter(m => mealFilter==='all' || (mealFilter==='d'?m.d : mealFilter==='k'?m.k : mealFilter==='yor'?YORUBA_IDS.has(m.id) : mealFilter==='db'?m.set==='db' : m.cats.includes(mealFilter)));
   $('#main').innerHTML = `<h2>Meal library</h2>
+    <div class="muted" style="margin:-6px 2px 12px">Tap any meal for its video, ingredients and step-by-step recipe.</div>
+    <input type="text" id="mealSearch" placeholder="🔍 Search meals" style="margin-bottom:12px">
     <div class="chips" style="margin-bottom:14px">${Object.entries(F).map(([k,v])=>`<button class="chip ${k===mealFilter?'on':''}" data-f="${k}">${v}</button>`).join('')}</div>
-    <div class="grid">${list.map(m=>`<div class="card mealcard">${mealPic(m, 'hero')}<h3 style="margin:12px 0 0">${esc(m.name)}${yoName(m)?`<span class="yo">${esc(yoName(m))}</span>`:''}</h3>
+    <div class="grid">${list.map(m=>`<div class="card mealcard" data-howto="${m.id}" data-find="${esc((m.name+' '+(yoName(m)||'')).toLowerCase())}">${mealPic(m, 'hero')}<h3 style="margin:12px 0 0">${esc(m.name)}${yoName(m)?`<span class="yo">${esc(yoName(m))}</span>`:''}</h3>
       <div style="margin:8px 0">${m.d?'<span class="pill p-d">💚 sugar-friendly</span>':''}${m.k?'<span class="pill p-k">kids</span>':''}${m.p?'<span class="pill p-p">packs</span>':''}</div>
       ${m.tip?`<div class="tip">💚 ${esc(m.tip)}</div>`:''}
       ${m.ing.length?`<div class="muted" style="font-size:15px;margin-top:8px">${esc(m.ing.join(', '))}</div>`:''}
       <div class="row" style="margin-top:8px;font-size:15px"><span>≈ <b>${money(mealCost(m, db.home.kids+2))}</b> for the family</span>
-        ${recipeOf(m)?`<a class="rlink" href="${recipeOf(m)}" target="_blank" rel="noopener">📖 Recipe</a>`:''}</div>
+        <span class="rlink">📖 Recipe & video</span></div>
       ${m.custom?`<button class="btn warn" style="margin-top:10px;padding:8px 14px" data-del="${m.id}">Remove</button>`:''}</div>`).join('')}</div>
     ${photoCreditsHtml()}
     <h2 style="margin-top:30px">Add a family meal</h2>
@@ -745,6 +749,8 @@ function renderMeals(){
       <div><button class="btn" id="nSave">Add meal</button></div>
     </div>`;
   $('#main').querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{mealFilter=b.dataset.f; render();});
+  $('#mealSearch').oninput = e => { const q = e.target.value.trim().toLowerCase();
+    $('#main').querySelectorAll('.mealcard').forEach(c => c.hidden = !c.dataset.find.includes(q)); };
   $('#main').querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{ db.custom=db.custom.filter(m=>m.id!==b.dataset.del); save(); render(); });
   $('#main').querySelectorAll('#nCats .chip, #nD, #nK, #nP').forEach(b=>b.onclick=()=>b.classList.toggle('on'));
   $('#nSave').onclick=()=>{
