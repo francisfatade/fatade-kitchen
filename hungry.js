@@ -138,12 +138,16 @@ const Alarm = {
   },
   async ring(id){
     const c = this.cfg, {dinner, late, me} = this.info;
+    if(id !== this.round) return;
+    if(!$('#hgOk')) return this.stop();                                   // never ring without a stop button on screen
+    if(c.stopAfter && Date.now() - this.started > c.stopAfter * 60000){ this.stop(); closePicker(); return; }
+    if(document.hidden){ this.loop = setTimeout(() => this.ring(id), 5000); return; }   // app not on screen: stay quiet
     const menu = (dinner ? `Tonight's dinner is ${dinner.name}. ` : '') + (late ? `His late plate is ${late.name}.` : '');
-    const say = t => new Promise(res => { if(!t || typeof voice === 'undefined' || voice.active) return res(); voice.speak(t, res); setTimeout(res, 30000); });
+    const say = t => new Promise(res => { if(!t || document.hidden || typeof voice === 'undefined' || voice.active) return res(); voice.speak(t, res); setTimeout(res, 30000); });
     if(c.useRec && CallRec.has){ await CallRec.play(); if(id !== this.round) return; await say(menu); }   // Daddy's own song first
     else { chime(); await new Promise(r => setTimeout(r, 1400)); if(id !== this.round) return; await say(`Ebi ń pa mí o! Ìyàwó, ${me} ń bọ̀ wálé. ` + menu); }
-    if(id !== this.round || c.repeat !== 'repeat') return;
-    if(c.stopAfter && Date.now() - this.started > c.stopAfter * 60000){ this.stop(); closePicker(); return; }
+    if(id !== this.round) return;
+    if(c.repeat !== 'repeat'){ this.active = false; return; }             // played once: the card can now be dismissed
     this.loop = setTimeout(() => { if(id === this.round) this.ring(id); }, (c.gap || 30) * 1000);
   },
   silence(){ this.round++; this.active = false; clearTimeout(this.loop); CallRec.stopPlay(); if(NATIVE) NATIVE.stopVoice(); else window.speechSynthesis?.cancel(); },
@@ -236,5 +240,10 @@ function hungryInit(){
   // Ringing defaults (older saved settings don't have them): repeat until acknowledged
   for(const [k, v] of Object.entries({repeat:'repeat', gap:30, stopAfter:15, snooze:10})) if(c[k] === undefined) c[k] = v;
   CallRec.load().then(installUpdateSong);
+  // Leaving the app or the tablet sleeping cuts the sound at once; it resumes on return if still unanswered
+  document.addEventListener('visibilitychange', () => {
+    if(!document.hidden || !Alarm.active) return;
+    CallRec.stopPlay(); if(NATIVE) NATIVE.stopVoice(); else window.speechSynthesis?.cancel();
+  });
   hungryCheck(); setInterval(hungryCheck, 30000);
 }
